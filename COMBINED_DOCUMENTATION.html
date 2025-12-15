@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>COMBINED_DOCUMENTATION</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#dora-konformer-szenariengenerator"
+id="toc-dora-konformer-szenariengenerator">DORA-konformer
+Szenariengenerator</a>
+<ul>
+<li><a href="#vollständige-dokumentation"
+id="toc-vollständige-dokumentation">Vollständige Dokumentation</a></li>
+</ul></li>
+<li><a href="#readme" id="toc-readme">Readme</a>
+<ul>
+<li><a href="#projektziel" id="toc-projektziel">🎯 Projektziel</a></li>
+<li><a href="#architektur" id="toc-architektur">🏗️ Architektur</a>
+<ul>
+<li><a href="#high-level-übersicht"
+id="toc-high-level-übersicht">High-Level Übersicht</a></li>
+<li><a href="#tech-stack" id="toc-tech-stack">Tech Stack</a></li>
+<li><a href="#komponenten" id="toc-komponenten">Komponenten</a></li>
+</ul></li>
+<li><a href="#setup" id="toc-setup">🚀 Setup</a>
+<ul>
+<li><a href="#installation" id="toc-installation">1.
+Installation</a></li>
+<li><a href="#umgebungsvariablen" id="toc-umgebungsvariablen">2.
+Umgebungsvariablen</a></li>
+<li><a href="#neo4j-setup" id="toc-neo4j-setup">3. Neo4j Setup</a></li>
+<li><a href="#neo4j-starten" id="toc-neo4j-starten">4. Neo4j
+starten</a></li>
+<li><a href="#setup-testen" id="toc-setup-testen">5. Setup
+testen</a></li>
+</ul></li>
+<li><a href="#verwendung" id="toc-verwendung">📋 Verwendung</a>
+<ul>
+<li><a href="#frontend-empfohlen" id="toc-frontend-empfohlen">Frontend
+(Empfohlen)</a></li>
+<li><a href="#programmgesteuerte-nutzung"
+id="toc-programmgesteuerte-nutzung">Programmgesteuerte Nutzung</a></li>
+</ul></li>
+<li><a href="#workflow-implementiert" id="toc-workflow-implementiert">🔄
+Workflow (implementiert)</a></li>
+<li><a href="#szenario-typen" id="toc-szenario-typen">📊
+Szenario-Typen</a></li>
+<li><a href="#qualitäts-metriken" id="toc-qualitäts-metriken">🧪
+Qualitäts-Metriken</a></li>
+<li><a href="#schnellstart" id="toc-schnellstart">🎯 Schnellstart</a>
+<ul>
+<li><a href="#frontend-starten" id="toc-frontend-starten">Frontend
+starten</a></li>
+<li><a href="#programmgesteuert-verwenden"
+id="toc-programmgesteuert-verwenden">Programmgesteuert
+verwenden</a></li>
+</ul></li>
+<li><a href="#implementierte-features"
+id="toc-implementierte-features">✅ Implementierte Features</a></li>
+<li><a href="#nächste-schritte-verbesserungspotenzial"
+id="toc-nächste-schritte-verbesserungspotenzial">📝 Nächste Schritte /
+Verbesserungspotenzial</a></li>
+<li><a href="#lizenz" id="toc-lizenz">📄 Lizenz</a></li>
+</ul></li>
+<li><a href="#status" id="toc-status">Status</a>
+<ul>
+<li><a href="#was-das-system-jetzt-kann"
+id="toc-was-das-system-jetzt-kann">✅ Was das System jetzt kann</a>
+<ul>
+<li><a href="#kernfunktionalität" id="toc-kernfunktionalität">🎯
+Kernfunktionalität</a></li>
+<li><a href="#technische-features" id="toc-technische-features">🔧
+Technische Features</a></li>
+</ul></li>
+<li><a href="#was-noch-fehlt-verbesserungspotenzial"
+id="toc-was-noch-fehlt-verbesserungspotenzial">⚠️ Was noch fehlt /
+Verbesserungspotenzial</a>
+<ul>
+<li><a href="#kritische-features-für-produktion"
+id="toc-kritische-features-für-produktion">🔴 Kritische Features (für
+Produktion)</a></li>
+<li><a href="#wichtige-features-für-erweiterte-nutzung"
+id="toc-wichtige-features-für-erweiterte-nutzung">🟡 Wichtige Features
+(für erweiterte Nutzung)</a></li>
+<li><a href="#nice-to-have-features" id="toc-nice-to-have-features">🟢
+Nice-to-Have Features</a></li>
+</ul></li>
+<li><a href="#wie-das-system-eingesetzt-werden-kann"
+id="toc-wie-das-system-eingesetzt-werden-kann">🚀 Wie das System
+eingesetzt werden kann</a>
+<ul>
+<li><a href="#aktuelle-anwendungsfälle"
+id="toc-aktuelle-anwendungsfälle">📋 Aktuelle Anwendungsfälle</a></li>
+<li><a href="#technische-integration" id="toc-technische-integration">🔧
+Technische Integration</a></li>
+<li><a href="#empfohlene-workflows" id="toc-empfohlene-workflows">📊
+Empfohlene Workflows</a></li>
+<li><a href="#konfiguration" id="toc-konfiguration">⚙️
+Konfiguration</a></li>
+</ul></li>
+<li><a href="#roadmap" id="toc-roadmap">📈 Roadmap</a>
+<ul>
+<li><a href="#phase-1-mvp-abgeschlossen"
+id="toc-phase-1-mvp-abgeschlossen"><strong>Phase 1: MVP (✅
+Abgeschlossen)</strong></a></li>
+<li><a href="#phase-2-erweiterte-features-in-arbeit"
+id="toc-phase-2-erweiterte-features-in-arbeit"><strong>Phase 2:
+Erweiterte Features (🔄 In Arbeit)</strong></a></li>
+<li><a href="#phase-3-produktionsreife-geplant"
+id="toc-phase-3-produktionsreife-geplant"><strong>Phase 3:
+Produktionsreife (📅 Geplant)</strong></a></li>
+</ul></li>
+<li><a href="#best-practices" id="toc-best-practices">🎓 Best
+Practices</a></li>
+<li><a href="#support-weiterentwicklung"
+id="toc-support-weiterentwicklung">📞 Support &amp;
+Weiterentwicklung</a></li>
+</ul></li>
+<li><a href="#quickstart" id="toc-quickstart">Quickstart</a>
+<ul>
+<li><a href="#in-5-minuten-zum-ersten-szenario"
+id="toc-in-5-minuten-zum-ersten-szenario">⚡ In 5 Minuten zum ersten
+Szenario</a>
+<ul>
+<li><a href="#schritt-1-voraussetzungen-prüfen"
+id="toc-schritt-1-voraussetzungen-prüfen">Schritt 1: Voraussetzungen
+prüfen</a></li>
+<li><a href="#schritt-2-projekt-einrichten"
+id="toc-schritt-2-projekt-einrichten">Schritt 2: Projekt
+einrichten</a></li>
+<li><a href="#schritt-3-konfiguration"
+id="toc-schritt-3-konfiguration">Schritt 3: Konfiguration</a></li>
+<li><a href="#schritt-4-neo4j-starten"
+id="toc-schritt-4-neo4j-starten">Schritt 4: Neo4j starten</a></li>
+<li><a href="#schritt-5-setup-testen"
+id="toc-schritt-5-setup-testen">Schritt 5: Setup testen</a></li>
+<li><a href="#schritt-6-frontend-starten"
+id="toc-schritt-6-frontend-starten">Schritt 6: Frontend starten</a></li>
+<li><a href="#schritt-7-erstes-szenario-generieren"
+id="toc-schritt-7-erstes-szenario-generieren">Schritt 7: Erstes Szenario
+generieren</a></li>
+</ul></li>
+<li><a href="#weitere-dokumentation" id="toc-weitere-dokumentation">📚
+Weitere Dokumentation</a></li>
+<li><a href="#häufige-probleme" id="toc-häufige-probleme">🆘 Häufige
+Probleme</a>
+<ul>
+<li><a href="#neo4j-verbindungsfehler"
+id="toc-neo4j-verbindungsfehler">Neo4j-Verbindungsfehler</a></li>
+<li><a href="#openai-api-fehler" id="toc-openai-api-fehler">OpenAI API
+Fehler</a></li>
+<li><a href="#import-fehler"
+id="toc-import-fehler">Import-Fehler</a></li>
+</ul></li>
+<li><a href="#erfolg" id="toc-erfolg">✅ Erfolg!</a></li>
+</ul></li>
+<li><a href="#setup-1" id="toc-setup-1">Setup</a>
+<ul>
+<li><a href="#schritt-1-python-virtual-environment-erstellen"
+id="toc-schritt-1-python-virtual-environment-erstellen">Schritt 1:
+Python Virtual Environment erstellen</a></li>
+<li><a href="#schritt-2-dependencies-installieren"
+id="toc-schritt-2-dependencies-installieren">Schritt 2: Dependencies
+installieren</a></li>
+<li><a href="#schritt-3-umgebungsvariablen-konfigurieren"
+id="toc-schritt-3-umgebungsvariablen-konfigurieren">Schritt 3:
+Umgebungsvariablen konfigurieren</a></li>
+<li><a href="#schritt-4-setup-testen"
+id="toc-schritt-4-setup-testen">Schritt 4: Setup testen</a></li>
+<li><a href="#schritt-5-neo4j-starten-optional"
+id="toc-schritt-5-neo4j-starten-optional">Schritt 5: Neo4j starten
+(optional)</a></li>
+<li><a href="#fertig" id="toc-fertig">✅ Fertig!</a></li>
+<li><a href="#nächste-entwicklungsschritte"
+id="toc-nächste-entwicklungsschritte">Nächste
+Entwicklungsschritte</a></li>
+</ul></li>
+<li><a href="#frontend" id="toc-frontend">Frontend</a>
+<ul>
+<li><a href="#starten" id="toc-starten">🚀 Starten</a></li>
+<li><a href="#features" id="toc-features">📋 Features</a>
+<ul>
+<li><a href="#generierung-tab" id="toc-generierung-tab">1.
+<strong>Generierung Tab</strong></a></li>
+<li><a href="#ergebnisse-tab" id="toc-ergebnisse-tab">2.
+<strong>Ergebnisse Tab</strong></a></li>
+<li><a href="#visualisierung-tab" id="toc-visualisierung-tab">3.
+<strong>Visualisierung Tab</strong></a></li>
+</ul></li>
+<li><a href="#verwendung-1" id="toc-verwendung-1">🎯 Verwendung</a></li>
+<li><a href="#wichtige-hinweise" id="toc-wichtige-hinweise">⚠️ Wichtige
+Hinweise</a></li>
+<li><a href="#troubleshooting" id="toc-troubleshooting">🔧
+Troubleshooting</a>
+<ul>
+<li><a href="#app-startet-nicht" id="toc-app-startet-nicht">App startet
+nicht</a></li>
+<li><a href="#neo4j-verbindungsfehler-1"
+id="toc-neo4j-verbindungsfehler-1">Neo4j-Verbindungsfehler</a></li>
+<li><a href="#openai-api-fehler-1" id="toc-openai-api-fehler-1">OpenAI
+API Fehler</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#architecture" id="toc-architecture">Architecture</a>
+<ul>
+<li><a href="#übersicht" id="toc-übersicht">📊 Übersicht</a>
+<ul>
+<li><a href="#high-level-architektur"
+id="toc-high-level-architektur">High-Level Architektur</a></li>
+</ul></li>
+<li><a href="#workflow-architektur" id="toc-workflow-architektur">🔄
+Workflow-Architektur</a>
+<ul>
+<li><a href="#langgraph-workflow-flow"
+id="toc-langgraph-workflow-flow">LangGraph Workflow Flow</a></li>
+<li><a href="#detaillierter-workflow"
+id="toc-detaillierter-workflow">Detaillierter Workflow</a></li>
+</ul></li>
+<li><a href="#komponenten-architektur"
+id="toc-komponenten-architektur">🧩 Komponenten-Architektur</a>
+<ul>
+<li><a href="#agent-architektur"
+id="toc-agent-architektur">Agent-Architektur</a></li>
+<li><a href="#state-management-architektur"
+id="toc-state-management-architektur">State Management
+Architektur</a></li>
+</ul></li>
+<li><a href="#datenfluss" id="toc-datenfluss">📦 Datenfluss</a>
+<ul>
+<li><a href="#inject-generierungs-pipeline"
+id="toc-inject-generierungs-pipeline">Inject-Generierungs-Pipeline</a></li>
+</ul></li>
+<li><a href="#sicherheits-architektur"
+id="toc-sicherheits-architektur">🔐 Sicherheits-Architektur</a>
+<ul>
+<li><a href="#datenfluss-und-sicherheit"
+id="toc-datenfluss-und-sicherheit">Datenfluss und Sicherheit</a></li>
+</ul></li>
+<li><a href="#datenmodell-1" id="toc-datenmodell-1">🗄️ Datenmodell</a>
+<ul>
+<li><a href="#entity-relationship-diagram"
+id="toc-entity-relationship-diagram">Entity-Relationship
+Diagram</a></li>
+</ul></li>
+<li><a href="#phasen-übergänge-fsm" id="toc-phasen-übergänge-fsm">🔄
+Phasen-Übergänge (FSM)</a>
+<ul>
+<li><a href="#finite-state-machine" id="toc-finite-state-machine">Finite
+State Machine</a></li>
+</ul></li>
+<li><a href="#deployment-architektur" id="toc-deployment-architektur">📊
+Deployment-Architektur</a>
+<ul>
+<li><a href="#lokale-entwicklung" id="toc-lokale-entwicklung">Lokale
+Entwicklung</a></li>
+</ul></li>
+<li><a href="#technologie-stack" id="toc-technologie-stack">🔧
+Technologie-Stack</a>
+<ul>
+<li><a href="#technologie-layers"
+id="toc-technologie-layers">Technologie-Layers</a></li>
+</ul></li>
+<li><a href="#skalierungs-architektur"
+id="toc-skalierungs-architektur">📈 Skalierungs-Architektur</a>
+<ul>
+<li><a href="#zukünftige-erweiterungen"
+id="toc-zukünftige-erweiterungen">Zukünftige Erweiterungen</a></li>
+</ul></li>
+<li><a href="#legende" id="toc-legende">📝 Legende</a>
+<ul>
+<li><a href="#farb-codierung"
+id="toc-farb-codierung">Farb-Codierung</a></li>
+<li><a href="#diagramm-typen"
+id="toc-diagramm-typen">Diagramm-Typen</a></li>
+</ul></li>
+<li><a href="#verwandte-dokumentation"
+id="toc-verwandte-dokumentation">🔗 Verwandte Dokumentation</a></li>
+</ul></li>
+<li><a href="#documentation" id="toc-documentation">Documentation</a>
+<ul>
+<li><a href="#schnelleinstieg" id="toc-schnelleinstieg">🚀
+Schnelleinstieg</a>
+<ul>
+<li><a href="#für-neue-nutzer" id="toc-für-neue-nutzer">Für neue
+Nutzer</a></li>
+</ul></li>
+<li><a href="#hauptdokumentation" id="toc-hauptdokumentation">📖
+Hauptdokumentation</a>
+<ul>
+<li><a href="#readme.md" id="toc-readme.md">README.md</a></li>
+<li><a href="#architecture.md"
+id="toc-architecture.md">ARCHITECTURE.md</a></li>
+</ul></li>
+<li><a href="#status-capabilities" id="toc-status-capabilities">📊
+Status &amp; Capabilities</a>
+<ul>
+<li><a href="#status.md" id="toc-status.md">STATUS.md</a></li>
+</ul></li>
+<li><a href="#setup-installation" id="toc-setup-installation">🔧 Setup
+&amp; Installation</a>
+<ul>
+<li><a href="#setup.md" id="toc-setup.md">SETUP.md</a></li>
+<li><a href="#quickstart.md"
+id="toc-quickstart.md">QUICKSTART.md</a></li>
+</ul></li>
+<li><a href="#frontend-1" id="toc-frontend-1">🎨 Frontend</a>
+<ul>
+<li><a href="#frontend.md" id="toc-frontend.md">FRONTEND.md</a></li>
+</ul></li>
+<li><a href="#code-dokumentation" id="toc-code-dokumentation">💻
+Code-Dokumentation</a>
+<ul>
+<li><a href="#python-dateien"
+id="toc-python-dateien">Python-Dateien</a></li>
+<li><a href="#test-dateien" id="toc-test-dateien">Test-Dateien</a></li>
+</ul></li>
+<li><a href="#verwendungsbeispiele" id="toc-verwendungsbeispiele">📋
+Verwendungsbeispiele</a>
+<ul>
+<li><a href="#frontend-empfohlen-1"
+id="toc-frontend-empfohlen-1">Frontend (Empfohlen)</a></li>
+<li><a href="#programmgesteuert"
+id="toc-programmgesteuert">Programmgesteuert</a></li>
+</ul></li>
+<li><a href="#dokumentations-struktur"
+id="toc-dokumentations-struktur">🗂️ Dokumentations-Struktur</a></li>
+<li><a href="#nach-anwendungsfall" id="toc-nach-anwendungsfall">🎯 Nach
+Anwendungsfall</a>
+<ul>
+<li><a href="#ich-möchte" id="toc-ich-möchte">Ich möchte…</a></li>
+</ul></li>
+<li><a href="#support" id="toc-support">📞 Support</a></li>
+<li><a href="#dokumentation-aktualisieren"
+id="toc-dokumentation-aktualisieren">🔄 Dokumentation
+aktualisieren</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="dora-konformer-szenariengenerator">DORA-konformer
+Szenariengenerator</h1>
+<h2 id="vollständige-dokumentation">Vollständige Dokumentation</h2>
+<p><strong>Version:</strong> MVP 1.0<br />
+<strong>Datum:</strong> 2025-01-XX<br />
+<strong>Projekt:</strong> DORA-konformer Szenariengenerator für
+Krisenmanagement</p>
+<hr />
+<p><strong>Inhaltsverzeichnis:</strong></p>
+<ol type="1">
+<li><a href="#projektübersicht">Projektübersicht</a></li>
+<li><a href="#status--capabilities">Status &amp; Capabilities</a></li>
+<li><a href="#schnellstart">Schnellstart</a></li>
+<li><a href="#setup-anleitung">Setup-Anleitung</a></li>
+<li><a href="#frontend-anleitung">Frontend-Anleitung</a></li>
+<li><a href="#architektur">Architektur</a></li>
+<li><a
+href="#dokumentations-übersicht">Dokumentations-Übersicht</a></li>
+</ol>
+<hr />
+<h1 id="readme">Readme</h1>
+<p>Ein Prototyp zur Generierung realistischer, logisch konsistenter
+Krisenszenarien (MSELs) für Finanzunternehmen, die den Anforderungen des
+<strong>Digital Operational Resilience Act (DORA)</strong>
+entsprechen.</p>
+<h2 id="projektziel">🎯 Projektziel</h2>
+<p>Das System verwendet <strong>Generative KI (LLMs)</strong>,
+<strong>Multi-Agenten-Systeme</strong> und <strong>Knowledge
+Graphs</strong>, um: - Realistische Krisenszenarien zu generieren -
+Logische Konsistenz sicherzustellen - DORA-Konformität zu validieren -
+Second-Order Effects zu modellieren</p>
+<h2 id="architektur">🏗️ Architektur</h2>
+<h3 id="high-level-übersicht">High-Level Übersicht</h3>
+<pre class="mermaid"><code>graph TB
+    subgraph &quot;Frontend Layer&quot;
+        ST[Streamlit UI]
+    end
+    
+    subgraph &quot;Orchestration Layer&quot;
+        LG[LangGraph Workflow]
+    end
+    
+    subgraph &quot;Agent Layer&quot;
+        MA[Manager Agent]
+        GA[Generator Agent]
+        CA[Critic Agent]
+        IA[Intel Agent]
+    end
+    
+    subgraph &quot;Data Layer&quot;
+        NEO[Neo4j&lt;br/&gt;Knowledge Graph]
+        CHROMA[ChromaDB&lt;br/&gt;Vector DB]
+        LLM[OpenAI GPT-4o]
+    end
+    
+    ST --&gt; LG
+    LG --&gt; MA
+    LG --&gt; GA
+    LG --&gt; CA
+    LG --&gt; IA
+    
+    MA --&gt; LLM
+    GA --&gt; LLM
+    CA --&gt; LLM
+    
+    IA --&gt; CHROMA
+    LG --&gt; NEO
+    GA --&gt; NEO
+    CA --&gt; NEO</code></pre>
+<p><strong>📊 Detaillierte Architektur-Diagramme</strong>: Siehe <a
+href="ARCHITECTURE.md">ARCHITECTURE.md</a></p>
+<h3 id="tech-stack">Tech Stack</h3>
+<ul>
+<li><strong>Sprache:</strong> Python 3.10+</li>
+<li><strong>Frontend:</strong> Streamlit</li>
+<li><strong>Orchestrierung:</strong> LangGraph
+(Multi-Agenten-System)</li>
+<li><strong>LLM:</strong> OpenAI GPT-4o oder Llama 3</li>
+<li><strong>Knowledge Graph:</strong> Neo4j</li>
+<li><strong>Vektor-Datenbank:</strong> ChromaDB (für RAG)</li>
+<li><strong>Validierung:</strong> Pydantic</li>
+</ul>
+<h3 id="komponenten">Komponenten</h3>
+<ol type="1">
+<li><strong>State Models</strong> (<code>state_models.py</code>):
+Pydantic-Modelle für Injects, State Management, Knowledge Graph
+Entitäten</li>
+<li><strong>Neo4j Client</strong> (<code>neo4j_client.py</code>):
+Verwaltung des Knowledge Graph States</li>
+<li><strong>LangGraph Workflow</strong>: Orchestrierung der Agenten
+(Manager, Generator, Critic, Intel)</li>
+<li><strong>Streamlit Frontend</strong>: Parametereingabe und
+Visualisierung</li>
+</ol>
+<h2 id="setup">🚀 Setup</h2>
+<h3 id="installation">1. Installation</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Virtual Environment erstellen</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv venv</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate  <span class="co"># Auf Windows: venv\Scripts\activate</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Dependencies installieren</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span></code></pre></div>
+<h3 id="umgebungsvariablen">2. Umgebungsvariablen</h3>
+<p>Kopiere <code>.env.example</code> zu <code>.env</code> und fülle die
+Werte aus:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example .env</span></code></pre></div>
+<p>Bearbeite <code>.env</code>: - <code>NEO4J_URI</code>: Neo4j
+Verbindungs-URI (Standard: <code>bolt://localhost:7687</code>) -
+<code>NEO4J_USER</code>: Neo4j Benutzername -
+<code>NEO4J_PASSWORD</code>: Neo4j Passwort -
+<code>OPENAI_API_KEY</code>: OpenAI API Key</p>
+<h3 id="neo4j-setup">3. Neo4j Setup</h3>
+<p>Stelle sicher, dass Neo4j läuft:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Mit Docker</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span> neo4j <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 7474:7474 <span class="at">-p</span> 7687:7687 <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> NEO4J_AUTH=neo4j/password <span class="dt">\</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  neo4j:latest</span></code></pre></div>
+<h3 id="neo4j-starten">4. Neo4j starten</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Mit dem bereitgestellten Skript</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./start_neo4j.sh</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Oder manuell mit Docker</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span> neo4j <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 7474:7474 <span class="at">-p</span> 7687:7687 <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> NEO4J_AUTH=neo4j/password <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  neo4j:latest</span></code></pre></div>
+<h3 id="setup-testen">5. Setup testen</h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prüfe ob alles funktioniert</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> check_setup.py</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Teste den Workflow</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> test_workflow.py</span></code></pre></div>
+<h2 id="verwendung">📋 Verwendung</h2>
+<h3 id="frontend-empfohlen">Frontend (Empfohlen)</h3>
+<p>Die einfachste Art, das System zu nutzen, ist über das Streamlit
+Frontend:</p>
+<ol type="1">
+<li>Starte die App: <code>streamlit run app.py</code></li>
+<li>Wähle Szenario-Typ und Anzahl Injects</li>
+<li>Klicke auf “Szenario generieren”</li>
+<li>Prüfe Ergebnisse im “Ergebnisse” Tab</li>
+<li>Exportiere bei Bedarf (CSV/JSON)</li>
+</ol>
+<p>Siehe <a href="FRONTEND.md">FRONTEND.md</a> für detaillierte
+Anleitung.</p>
+<h3 id="programmgesteuerte-nutzung">Programmgesteuerte Nutzung</h3>
+<h4 id="state-models">State Models</h4>
+<p>Die Pydantic-Modelle in <code>state_models.py</code> definieren:</p>
+<ul>
+<li><strong><code>Inject</code></strong>: MSEL-Inject Schema mit
+Validierung</li>
+<li><strong><code>ScenarioState</code></strong>: Zustand eines laufenden
+Szenarios</li>
+<li><strong><code>KnowledgeGraphEntity</code></strong>: Entität für den
+Neo4j Graph</li>
+<li><strong><code>ValidationResult</code></strong>: Ergebnis der
+Critic-Agent Validierung</li>
+</ul>
+<h4 id="neo4j-client">Neo4j Client</h4>
+<p>Der <code>Neo4jClient</code> verwaltet den Systemzustand:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> neo4j_client <span class="im">import</span> Neo4jClient</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> Neo4jClient() <span class="im">as</span> client:</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Aktuellen State abfragen</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    entities <span class="op">=</span> client.get_current_state()</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Status einer Entität aktualisieren</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    client.update_entity_status(<span class="st">&quot;SRV-001&quot;</span>, <span class="st">&quot;offline&quot;</span>, inject_id<span class="op">=</span><span class="st">&quot;INJ-005&quot;</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Second-Order Effects abfragen</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    affected <span class="op">=</span> client.get_affected_entities(<span class="st">&quot;SRV-001&quot;</span>)</span></code></pre></div>
+<h4 id="workflow">Workflow</h4>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> workflows.scenario_workflow <span class="im">import</span> ScenarioWorkflow</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> state_models <span class="im">import</span> ScenarioType</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>workflow <span class="op">=</span> ScenarioWorkflow(neo4j_client<span class="op">=</span>neo4j, max_iterations<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> workflow.generate_scenario(ScenarioType.RANSOMWARE_DOUBLE_EXTORTION)</span></code></pre></div>
+<h2 id="workflow-implementiert">🔄 Workflow (implementiert)</h2>
+<p>Der LangGraph-basierte Workflow orchestriert folgende Schritte:</p>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; StateCheck
+    
+    StateCheck --&gt; Manager: System State
+    Manager --&gt; Intel: Storyline Plan
+    Intel --&gt; ActionSelection: TTPs
+    ActionSelection --&gt; Generator: Selected TTP
+    Generator --&gt; Critic: Draft Inject
+    Critic --&gt; StateUpdate: Valid
+    Critic --&gt; Generator: Invalid (Refine)
+    StateUpdate --&gt; StateCheck: Continue
+    StateUpdate --&gt; [*]: End</code></pre>
+<p><strong>Detaillierte Schritte:</strong></p>
+<ol type="1">
+<li><strong>State Check</strong>: Abfrage des aktuellen Systemzustands
+aus Neo4j</li>
+<li><strong>Manager Agent</strong>: Erstellt Storyline-Plan basierend
+auf Szenario-Typ und Phase</li>
+<li><strong>Intel Agent</strong>: Stellt relevante MITRE ATT&amp;CK TTPs
+bereit</li>
+<li><strong>Action Selection</strong>: Auswahl des nächsten logischen
+Angriffsschritts</li>
+<li><strong>Generator Agent</strong>: Erstellt detaillierten Inject mit
+LLM</li>
+<li><strong>Critic Agent</strong>: Validiert Logik, DORA-Konformität und
+Causal Validity</li>
+<li><strong>State Update</strong>: Schreibt Auswirkungen in Neo4j (inkl.
+Second-Order Effects)</li>
+<li><strong>Refine Loop</strong>: Bei Validierungsfehlern zurück zum
+Generator (max. 2 Versuche)</li>
+</ol>
+<p><strong>📊 Vollständige Workflow-Diagramme</strong>: Siehe <a
+href="ARCHITECTURE.md">ARCHITECTURE.md</a></p>
+<h2 id="szenario-typen">📊 Szenario-Typen</h2>
+<ul>
+<li>Ransomware &amp; Double Extortion</li>
+<li>DDoS auf kritische Funktionen</li>
+<li>Supply Chain Compromise</li>
+<li>Insider Threat / Datenmanipulation</li>
+</ul>
+<h2 id="qualitäts-metriken">🧪 Qualitäts-Metriken</h2>
+<ul>
+<li><strong>Logical Consistency</strong>: Widerspruchsfreiheit zur
+Historie</li>
+<li><strong>Causal Validity</strong>: MITRE ATT&amp;CK Graph
+Konformität</li>
+<li><strong>DORA Compliance</strong>: Artikel 25 Anforderungen</li>
+</ul>
+<h2 id="schnellstart">🎯 Schnellstart</h2>
+<h3 id="frontend-starten">Frontend starten</h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Virtual Environment aktivieren</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Streamlit App starten</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> run app.py</span></code></pre></div>
+<p>Die App öffnet sich automatisch im Browser unter
+<code>http://localhost:8501</code></p>
+<h3 id="programmgesteuert-verwenden">Programmgesteuert verwenden</h3>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> neo4j_client <span class="im">import</span> Neo4jClient</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> workflows.scenario_workflow <span class="im">import</span> ScenarioWorkflow</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> state_models <span class="im">import</span> ScenarioType</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialisiere</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>neo4j <span class="op">=</span> Neo4jClient()</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>neo4j.<span class="ex">connect</span>()</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>workflow <span class="op">=</span> ScenarioWorkflow(neo4j_client<span class="op">=</span>neo4j, max_iterations<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Generiere Szenario</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> workflow.generate_scenario(</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    scenario_type<span class="op">=</span>ScenarioType.RANSOMWARE_DOUBLE_EXTORTION</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Verarbeite Ergebnisse</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> inject <span class="kw">in</span> result[<span class="st">&#39;injects&#39;</span>]:</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>inject<span class="sc">.</span>inject_id<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>inject<span class="sc">.</span>content<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<h2 id="implementierte-features">✅ Implementierte Features</h2>
+<ul>
+<li>✅ LangGraph Workflow mit Multi-Agenten-System</li>
+<li>✅ 4 Agenten: Manager, Generator, Critic, Intel</li>
+<li>✅ Neo4j Knowledge Graph für State Management</li>
+<li>✅ FSM-basierte Phasen-Übergänge</li>
+<li>✅ Streamlit Frontend mit Visualisierungen</li>
+<li>✅ Export-Funktionalität (CSV, JSON)</li>
+<li>✅ DORA-Compliance Validierung</li>
+<li>✅ MITRE ATT&amp;CK Integration</li>
+<li>✅ Second-Order Effects Tracking</li>
+</ul>
+<h2 id="nächste-schritte-verbesserungspotenzial">📝 Nächste Schritte /
+Verbesserungspotenzial</h2>
+<p>Siehe <a href="STATUS.md">STATUS.md</a> für detaillierte
+Informationen zu: - Was das System jetzt kann - Was noch fehlt - Wie es
+eingesetzt werden kann - Roadmap für zukünftige Features</p>
+<h2 id="lizenz">📄 Lizenz</h2>
+<p>[Zu definieren]</p>
+<hr />
+<h1 id="status">Status</h1>
+<h2 id="was-das-system-jetzt-kann">✅ Was das System jetzt kann</h2>
+<h3 id="kernfunktionalität">🎯 Kernfunktionalität</h3>
+<h4 id="szenario-generierung">1.
+<strong>Szenario-Generierung</strong></h4>
+<ul>
+<li>✅ Generierung realistischer Krisenszenarien für
+Finanzunternehmen</li>
+<li>✅ Unterstützung für 4 Szenario-Typen:
+<ul>
+<li>Ransomware &amp; Double Extortion</li>
+<li>DDoS auf kritische Funktionen</li>
+<li>Supply Chain Compromise</li>
+<li>Insider Threat / Datenmanipulation</li>
+</ul></li>
+<li>✅ Automatische Phasen-Übergänge (FSM-basiert)</li>
+<li>✅ Konfigurierbare Anzahl von Injects (1-20)</li>
+</ul>
+<h4 id="multi-agenten-system-langgraph">2. <strong>Multi-Agenten-System
+(LangGraph)</strong></h4>
+<ul>
+<li>✅ <strong>Manager Agent</strong>: Erstellt Storyline-Pläne
+basierend auf Szenario-Typ und Systemzustand</li>
+<li>✅ <strong>Generator Agent</strong>: Generiert detaillierte,
+realistische Injects mit LLM</li>
+<li>✅ <strong>Critic Agent</strong>: Validiert Injects auf:
+<ul>
+<li>Logische Konsistenz</li>
+<li>DORA-Compliance (Artikel 25)</li>
+<li>Causal Validity (MITRE ATT&amp;CK)</li>
+</ul></li>
+<li>✅ <strong>Intel Agent</strong>: Stellt relevante TTPs (Taktiken,
+Techniken, Prozeduren) bereit</li>
+</ul>
+<h4 id="state-management">3. <strong>State Management</strong></h4>
+<ul>
+<li>✅ Neo4j Knowledge Graph für Systemzustand</li>
+<li>✅ Tracking von Assets (Server, Applikationen, Abteilungen)</li>
+<li>✅ Second-Order Effects (indirekte Auswirkungen)</li>
+<li>✅ Status-Updates basierend auf Injects</li>
+</ul>
+<h4 id="validierung-qualitätssicherung">4. <strong>Validierung &amp;
+Qualitätssicherung</strong></h4>
+<ul>
+<li>✅ Pydantic-basierte Schema-Validierung</li>
+<li>✅ FSM-Validierung für Phasen-Übergänge</li>
+<li>✅ LLM-basierte Konsistenz-Prüfung</li>
+<li>✅ Refine-Loop bei Validierungsfehlern (max. 2 Versuche)</li>
+</ul>
+<h4 id="frontend-streamlit">5. <strong>Frontend
+(Streamlit)</strong></h4>
+<ul>
+<li>✅ Benutzerfreundliche Web-UI</li>
+<li>✅ Parametereingabe (Szenario-Typ, Anzahl Injects)</li>
+<li>✅ Detaillierte Inject-Anzeige</li>
+<li>✅ Visualisierungen (Phasen-Verteilung, Timeline)</li>
+<li>✅ Export-Funktionen (CSV, JSON)</li>
+</ul>
+<h4 id="datenmodell">6. <strong>Datenmodell</strong></h4>
+<ul>
+<li>✅ Vollständiges Inject-Schema (Pydantic)</li>
+<li>✅ Technical Metadata (MITRE IDs, IOCs, Assets)</li>
+<li>✅ DORA Compliance Tags</li>
+<li>✅ Business Impact Tracking</li>
+</ul>
+<h3 id="technische-features">🔧 Technische Features</h3>
+<ul>
+<li>✅ LangGraph Workflow-Orchestrierung</li>
+<li>✅ OpenAI GPT-4o Integration</li>
+<li>✅ Neo4j Knowledge Graph</li>
+<li>✅ ChromaDB für TTP-Vektor-Datenbank (Grundstruktur)</li>
+<li>✅ Automatische Fehlerbehandlung</li>
+<li>✅ Session Management (Streamlit)</li>
+</ul>
+<hr />
+<h2 id="was-noch-fehlt-verbesserungspotenzial">⚠️ Was noch fehlt /
+Verbesserungspotenzial</h2>
+<h3 id="kritische-features-für-produktion">🔴 Kritische Features (für
+Produktion)</h3>
+<ol type="1">
+<li><strong>ChromaDB TTP-Datenbank</strong>
+<ul>
+<li>❌ Vollständige MITRE ATT&amp;CK TTP-Datenbank noch nicht
+geladen</li>
+<li>⚠️ Aktuell: Fallback-TTPs werden verwendet</li>
+<li>📝 <strong>Nächster Schritt</strong>: MITRE ATT&amp;CK Daten
+importieren</li>
+</ul></li>
+<li><strong>Erweiterte Validierung</strong>
+<ul>
+<li>❌ NLI-Modelle für tiefere Konsistenz-Prüfung</li>
+<li>❌ Automatische Widerspruchserkennung zwischen Injects</li>
+<li>📝 <strong>Nächster Schritt</strong>: NLI-Modell Integration</li>
+</ul></li>
+<li><strong>Fehlerbehandlung</strong>
+<ul>
+<li>⚠️ Teilweise: Bessere Fehlerbehandlung bei LLM-Aufrufen</li>
+<li>⚠️ Retry-Logik für API-Calls</li>
+<li>📝 <strong>Nächster Schritt</strong>: Robustere Error Handling</li>
+</ul></li>
+</ol>
+<h3 id="wichtige-features-für-erweiterte-nutzung">🟡 Wichtige Features
+(für erweiterte Nutzung)</h3>
+<ol start="4" type="1">
+<li><strong>TIBER-EU Konformität</strong>
+<ul>
+<li>❌ “Flags” (Ziele) Generierung</li>
+<li>❌ “Leg-ups” (Hilfestellungen) Generierung</li>
+<li>📝 <strong>Nächster Schritt</strong>: TIBER-spezifische
+Features</li>
+</ul></li>
+<li><strong>Komplexitäts-Parameter</strong>
+<ul>
+<li>⚠️ Teilweise: Proportionalitätsprinzip noch nicht vollständig
+implementiert</li>
+<li>❌ Parametrisierung für verschiedene Unternehmensgrößen</li>
+<li>📝 <strong>Nächster Schritt</strong>: Komplexitäts-Slider im
+Frontend</li>
+</ul></li>
+<li><strong>Export-Formate</strong>
+<ul>
+<li>✅ CSV, JSON</li>
+<li>❌ Excel (.xlsx)</li>
+<li>❌ MSEL-Format (Standard für Übungen)</li>
+<li>📝 <strong>Nächster Schritt</strong>: Excel &amp; MSEL Export</li>
+</ul></li>
+<li><strong>Historische Szenarien</strong>
+<ul>
+<li>❌ Speicherung von generierten Szenarien</li>
+<li>❌ Vergleich zwischen Szenarien</li>
+<li>❌ Wiederverwendung von erfolgreichen Szenarien</li>
+<li>📝 <strong>Nächster Schritt</strong>: Datenbank für Szenarien</li>
+</ul></li>
+</ol>
+<h3 id="nice-to-have-features">🟢 Nice-to-Have Features</h3>
+<ol start="8" type="1">
+<li><strong>Erweiterte Visualisierungen</strong>
+<ul>
+<li>⚠️ Basis: Phasen-Verteilung, Timeline</li>
+<li>❌ Interaktive Graphen (Neo4j Visualisierung)</li>
+<li>❌ Attack-Kill-Chain Visualisierung</li>
+<li>📝 <strong>Nächster Schritt</strong>: Graph-Visualisierung</li>
+</ul></li>
+<li><strong>Templates &amp; Vorlagen</strong>
+<ul>
+<li>❌ Vordefinierte Szenario-Templates</li>
+<li>❌ Wiederverwendbare Inject-Patterns</li>
+<li>📝 <strong>Nächster Schritt</strong>: Template-System</li>
+</ul></li>
+<li><strong>Multi-User Support</strong>
+<ul>
+<li>❌ Benutzer-Authentifizierung</li>
+<li>❌ Projekt-Management</li>
+<li>❌ Kollaboration</li>
+<li>📝 <strong>Nächster Schritt</strong>: User Management</li>
+</ul></li>
+<li><strong>API-Endpoints</strong>
+<ul>
+<li>❌ REST API für externe Integration</li>
+<li>❌ Webhook-Support</li>
+<li>📝 <strong>Nächster Schritt</strong>: FastAPI Integration</li>
+</ul></li>
+<li><strong>Testing &amp; Qualitätssicherung</strong>
+<ul>
+<li>⚠️ Teilweise: Basis-Tests vorhanden</li>
+<li>❌ Unit Tests für alle Agenten</li>
+<li>❌ Integration Tests</li>
+<li>❌ End-to-End Tests</li>
+<li>📝 <strong>Nächster Schritt</strong>: Test-Suite erweitern</li>
+</ul></li>
+</ol>
+<hr />
+<h2 id="wie-das-system-eingesetzt-werden-kann">🚀 Wie das System
+eingesetzt werden kann</h2>
+<h3 id="aktuelle-anwendungsfälle">📋 Aktuelle Anwendungsfälle</h3>
+<h4 id="krisenübungen-vorbereiten">1. <strong>Krisenübungen
+vorbereiten</strong></h4>
+<pre><code>Zweck: Realistische MSELs (Master Scenario Event Lists) für Übungen generieren
+
+Workflow:
+1. Frontend öffnen (streamlit run app.py)
+2. Szenario-Typ wählen (z.B. Ransomware)
+3. Anzahl Injects konfigurieren (z.B. 10)
+4. Szenario generieren
+5. Injects prüfen und anpassen
+6. Als CSV/JSON exportieren
+7. In Übungs-Tool importieren</code></pre>
+<h4 id="dora-compliance-prüfen">2. <strong>DORA-Compliance
+prüfen</strong></h4>
+<pre><code>Zweck: Prüfen ob Szenarien DORA Artikel 25 Anforderungen erfüllen
+
+Workflow:
+1. Szenario generieren
+2. DORA Tags in Ergebnissen prüfen
+3. Validierungsdetails anzeigen
+4. Bei Bedarf anpassen und neu generieren</code></pre>
+<h4 id="threat-led-penetration-testing-tlpt">3. <strong>Threat-Led
+Penetration Testing (TLPT)</strong></h4>
+<pre><code>Zweck: Szenarien für TIBER-EU konforme Tests erstellen
+
+Workflow:
+1. Szenario generieren
+2. MITRE ATT&amp;CK TTPs analysieren
+3. Attack-Kill-Chain nachvollziehen
+4. Für Red Team Übungen verwenden</code></pre>
+<h4 id="business-continuity-planung">4. <strong>Business Continuity
+Planung</strong></h4>
+<pre><code>Zweck: Geschäftliche Auswirkungen von Cyber-Angriffen simulieren
+
+Workflow:
+1. Szenario mit Business Impact generieren
+2. Betroffene Assets analysieren
+3. Second-Order Effects prüfen
+4. Business Continuity Pläne anpassen</code></pre>
+<h3 id="technische-integration">🔧 Technische Integration</h3>
+<h4 id="als-standalone-tool"><strong>Als Standalone-Tool</strong></h4>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Direkte Nutzung über Streamlit</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> run app.py</span></code></pre></div>
+<h4 id="als-python-modul"><strong>Als Python-Modul</strong></h4>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> neo4j_client <span class="im">import</span> Neo4jClient</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> workflows.scenario_workflow <span class="im">import</span> ScenarioWorkflow</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> state_models <span class="im">import</span> ScenarioType</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialisiere</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>neo4j <span class="op">=</span> Neo4jClient()</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>neo4j.<span class="ex">connect</span>()</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>workflow <span class="op">=</span> ScenarioWorkflow(neo4j_client<span class="op">=</span>neo4j, max_iterations<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Generiere Szenario</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> workflow.generate_scenario(</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    scenario_type<span class="op">=</span>ScenarioType.RANSOMWARE_DOUBLE_EXTORTION</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Verarbeite Ergebnisse</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> inject <span class="kw">in</span> result[<span class="st">&#39;injects&#39;</span>]:</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>inject<span class="sc">.</span>inject_id<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>inject<span class="sc">.</span>content<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<h4 id="export-weiterverarbeitung"><strong>Export &amp;
+Weiterverarbeitung</strong></h4>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CSV Export</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> app <span class="im">import</span> export_to_csv</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>csv_data <span class="op">=</span> export_to_csv(result[<span class="st">&#39;injects&#39;</span>])</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Weiterverarbeitung in Excel, etc.</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="co"># JSON Export</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> app <span class="im">import</span> export_to_json</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>json_data <span class="op">=</span> export_to_json(result[<span class="st">&#39;injects&#39;</span>])</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co"># API-Integration, etc.</span></span></code></pre></div>
+<h3 id="empfohlene-workflows">📊 Empfohlene Workflows</h3>
+<h4 id="schneller-test-3-5-injects"><strong>Schneller Test (3-5
+Injects)</strong></h4>
+<ul>
+<li>Für erste Tests und Konzept-Validierung</li>
+<li>Dauer: ~2-5 Minuten</li>
+<li>Ideal für: Schnelle Prototypen</li>
+</ul>
+<h4 id="standard-szenario-10-15-injects"><strong>Standard-Szenario
+(10-15 Injects)</strong></h4>
+<ul>
+<li>Für vollständige Übungen</li>
+<li>Dauer: ~10-15 Minuten</li>
+<li>Ideal für: Reguläre Krisenübungen</li>
+</ul>
+<h4 id="komplexes-szenario-15-20-injects"><strong>Komplexes Szenario
+(15-20 Injects)</strong></h4>
+<ul>
+<li>Für umfassende Tests</li>
+<li>Dauer: ~20-30 Minuten</li>
+<li>Ideal für: Große Übungen, Audits</li>
+</ul>
+<h3 id="konfiguration">⚙️ Konfiguration</h3>
+<h4 id="umgebungsvariablen-.env"><strong>Umgebungsvariablen
+(.env)</strong></h4>
+<pre class="env"><code># Neo4j
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_password
+
+# OpenAI
+OPENAI_API_KEY=your_api_key
+
+# ChromaDB (optional)
+CHROMA_DB_PATH=./chroma_db</code></pre>
+<h4 id="workflow-parameter"><strong>Workflow-Parameter</strong></h4>
+<ul>
+<li><code>max_iterations</code>: Anzahl Injects (1-20)</li>
+<li><code>scenario_type</code>: Szenario-Typ</li>
+<li><code>auto_phase_transition</code>: Automatische
+Phasen-Übergänge</li>
+</ul>
+<hr />
+<h2 id="roadmap">📈 Roadmap</h2>
+<h3 id="phase-1-mvp-abgeschlossen"><strong>Phase 1: MVP (✅
+Abgeschlossen)</strong></h3>
+<ul>
+<li>✅ Grundstruktur</li>
+<li>✅ Agenten-Implementierung</li>
+<li>✅ Frontend</li>
+<li>✅ Basis-Validierung</li>
+</ul>
+<h3 id="phase-2-erweiterte-features-in-arbeit"><strong>Phase 2:
+Erweiterte Features (🔄 In Arbeit)</strong></h3>
+<ul>
+<li>🔄 ChromaDB TTP-Datenbank</li>
+<li>🔄 Erweiterte Validierung</li>
+<li>🔄 Excel Export</li>
+<li>🔄 TIBER-EU Features</li>
+</ul>
+<h3 id="phase-3-produktionsreife-geplant"><strong>Phase 3:
+Produktionsreife (📅 Geplant)</strong></h3>
+<ul>
+<li>📅 Vollständige Test-Suite</li>
+<li>📅 API-Endpoints</li>
+<li>📅 Multi-User Support</li>
+<li>📅 Performance-Optimierung</li>
+</ul>
+<hr />
+<h2 id="best-practices">🎓 Best Practices</h2>
+<ol type="1">
+<li><strong>Erste Nutzung</strong>: Starte mit 3-5 Injects zum
+Testen</li>
+<li><strong>Neo4j</strong>: Stelle sicher, dass Neo4j läuft vor der
+Generierung</li>
+<li><strong>Validierung</strong>: Prüfe Validierungswarnungen in den
+Ergebnissen</li>
+<li><strong>Export</strong>: Exportiere regelmäßig für Backup</li>
+<li><strong>Anpassungen</strong>: Passe Injects manuell an, wenn
+nötig</li>
+</ol>
+<hr />
+<h2 id="support-weiterentwicklung">📞 Support &amp;
+Weiterentwicklung</h2>
+<ul>
+<li><strong>Dokumentation</strong>: Siehe README.md, SETUP.md,
+FRONTEND.md</li>
+<li><strong>Tests</strong>: <code>python test_workflow.py</code></li>
+<li><strong>Setup-Prüfung</strong>:
+<code>python check_setup.py</code></li>
+</ul>
+<hr />
+<p><strong>Letzte Aktualisierung</strong>: 2025-01-XX
+<strong>Version</strong>: MVP 1.0</p>
+<hr />
+<h1 id="quickstart">Quickstart</h1>
+<p>Schnellstart-Anleitung für den DORA-Szenariengenerator.</p>
+<h2 id="in-5-minuten-zum-ersten-szenario">⚡ In 5 Minuten zum ersten
+Szenario</h2>
+<h3 id="schritt-1-voraussetzungen-prüfen">Schritt 1: Voraussetzungen
+prüfen</h3>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Python 3.10+ installiert?</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">--version</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Docker installiert? (für Neo4j)</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> <span class="at">--version</span></span></code></pre></div>
+<h3 id="schritt-2-projekt-einrichten">Schritt 2: Projekt einrichten</h3>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Repository klonen/öffnen</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> BA</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Virtual Environment erstellen</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> venv venv</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate  <span class="co"># Windows: venv\Scripts\activate</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Dependencies installieren</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span></code></pre></div>
+<h3 id="schritt-3-konfiguration">Schritt 3: Konfiguration</h3>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># .env Datei erstellen</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example .env</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># .env bearbeiten und eintragen:</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="co"># - NEO4J_PASSWORD=dein_passwort</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># - OPENAI_API_KEY=dein_api_key</span></span></code></pre></div>
+<h3 id="schritt-4-neo4j-starten">Schritt 4: Neo4j starten</h3>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Docker starten (falls nicht läuft)</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Dann Neo4j Container starten</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./start_neo4j.sh</span></span></code></pre></div>
+<h3 id="schritt-5-setup-testen">Schritt 5: Setup testen</h3>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prüfe ob alles funktioniert</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> check_setup.py</span></code></pre></div>
+<h3 id="schritt-6-frontend-starten">Schritt 6: Frontend starten</h3>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> run app.py</span></code></pre></div>
+<h3 id="schritt-7-erstes-szenario-generieren">Schritt 7: Erstes Szenario
+generieren</h3>
+<ol type="1">
+<li>Öffne Browser: <code>http://localhost:8501</code></li>
+<li>Wähle Szenario-Typ (z.B. “Ransomware Double Extortion”)</li>
+<li>Setze Anzahl Injects auf 3 (für schnellen Test)</li>
+<li>Klicke auf “🎯 Szenario generieren”</li>
+<li>Warte ~2-5 Minuten</li>
+<li>Prüfe Ergebnisse im “Ergebnisse” Tab</li>
+</ol>
+<h2 id="weitere-dokumentation">📚 Weitere Dokumentation</h2>
+<ul>
+<li><strong>README.md</strong>: Vollständige Projekt-Dokumentation</li>
+<li><strong>STATUS.md</strong>: Was kann das System, was fehlt, wie
+einsetzen</li>
+<li><strong>SETUP.md</strong>: Detaillierte Setup-Anleitung</li>
+<li><strong>FRONTEND.md</strong>: Frontend-Bedienungsanleitung</li>
+</ul>
+<h2 id="häufige-probleme">🆘 Häufige Probleme</h2>
+<h3 id="neo4j-verbindungsfehler">Neo4j-Verbindungsfehler</h3>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prüfe ob Neo4j läuft</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps <span class="kw">|</span> <span class="fu">grep</span> neo4j</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Starte Neo4j falls nicht</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./start_neo4j.sh</span></span></code></pre></div>
+<h3 id="openai-api-fehler">OpenAI API Fehler</h3>
+<ul>
+<li>Prüfe <code>.env</code> Datei</li>
+<li>Stelle sicher, dass <code>OPENAI_API_KEY</code> gesetzt ist</li>
+<li>Prüfe API Key Gültigkeit</li>
+</ul>
+<h3 id="import-fehler">Import-Fehler</h3>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stelle sicher, dass venv aktiviert ist</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Reinstalliere Dependencies</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span></code></pre></div>
+<h2 id="erfolg">✅ Erfolg!</h2>
+<p>Wenn du dein erstes Szenario generiert hast, kannst du: - Injects im
+Frontend ansehen - Als CSV/JSON exportieren - Visualisierungen prüfen -
+Mit verschiedenen Szenario-Typen experimentieren</p>
+<p>Viel Erfolg! 🎯</p>
+<hr />
+<h1 id="setup-1">Setup</h1>
+<h2 id="schritt-1-python-virtual-environment-erstellen">Schritt 1:
+Python Virtual Environment erstellen</h2>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Virtual Environment erstellen</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> venv venv</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Aktivieren (macOS/Linux)</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Aktivieren (Windows)</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="ex">venv\Scripts\activate</span></span></code></pre></div>
+<h2 id="schritt-2-dependencies-installieren">Schritt 2: Dependencies
+installieren</h2>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span></code></pre></div>
+<h2 id="schritt-3-umgebungsvariablen-konfigurieren">Schritt 3:
+Umgebungsvariablen konfigurieren</h2>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># .env Datei erstellen</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example .env</span></code></pre></div>
+<p>Dann öffne <code>.env</code> und trage deine Werte ein:</p>
+<pre class="env"><code># Neo4j (optional für jetzt - kann später konfiguriert werden)
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=dein_passwort_hier
+
+# OpenAI (wird später für LLM benötigt)
+OPENAI_API_KEY=dein_api_key_hier</code></pre>
+<h2 id="schritt-4-setup-testen">Schritt 4: Setup testen</h2>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> test_setup.py</span></code></pre></div>
+<p>Dieser Test prüft: - ✅ Pydantic-Modelle funktionieren - ✅
+Neo4j-Verbindung (falls konfiguriert)</p>
+<h2 id="schritt-5-neo4j-starten-optional">Schritt 5: Neo4j starten
+(optional)</h2>
+<p>Falls du Neo4j testen möchtest:</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Mit Docker</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span> neo4j <span class="dt">\</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 7474:7474 <span class="at">-p</span> 7687:7687 <span class="dt">\</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> NEO4J_AUTH=neo4j/password <span class="dt">\</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  neo4j:latest</span></code></pre></div>
+<p>Dann in <code>.env</code> eintragen:</p>
+<pre><code>NEO4J_PASSWORD=password</code></pre>
+<h2 id="fertig">✅ Fertig!</h2>
+<p>Wenn <code>test_setup.py</code> erfolgreich durchläuft, ist die
+Grundstruktur bereit.</p>
+<h2 id="nächste-entwicklungsschritte">Nächste Entwicklungsschritte</h2>
+<ol type="1">
+<li><strong>LangGraph Workflow</strong> implementieren</li>
+<li><strong>Agenten</strong> entwickeln (Manager, Generator, Critic,
+Intel)</li>
+<li><strong>ChromaDB</strong> für RAG einrichten</li>
+<li><strong>Streamlit Frontend</strong> erstellen</li>
+</ol>
+<hr />
+<h1 id="frontend">Frontend</h1>
+<h2 id="starten">🚀 Starten</h2>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Virtual Environment aktivieren</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Streamlit App starten</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> run app.py</span></code></pre></div>
+<p>Die App öffnet sich automatisch im Browser unter
+<code>http://localhost:8501</code></p>
+<h2 id="features">📋 Features</h2>
+<h3 id="generierung-tab">1. <strong>Generierung Tab</strong></h3>
+<ul>
+<li>Szenario-Typ auswählen (Ransomware, DDoS, Supply Chain, Insider
+Threat)</li>
+<li>Anzahl Injects konfigurieren (1-20)</li>
+<li>Erweiterte Optionen:
+<ul>
+<li>Automatische Phasen-Übergänge</li>
+<li>Validierungsdetails anzeigen</li>
+</ul></li>
+</ul>
+<h3 id="ergebnisse-tab">2. <strong>Ergebnisse Tab</strong></h3>
+<ul>
+<li>Übersicht aller generierten Injects</li>
+<li>Detaillierte Anzeige pro Inject:
+<ul>
+<li>Inject ID &amp; Zeitversatz</li>
+<li>Phase (mit farblicher Markierung)</li>
+<li>Quelle &amp; Ziel</li>
+<li>Modalität</li>
+<li>Inhalt</li>
+<li>MITRE ID</li>
+<li>Betroffene Assets</li>
+<li>DORA Compliance Tag</li>
+<li>Business Impact</li>
+</ul></li>
+<li>Export-Funktionen:
+<ul>
+<li>CSV Export</li>
+<li>JSON Export</li>
+</ul></li>
+</ul>
+<h3 id="visualisierung-tab">3. <strong>Visualisierung Tab</strong></h3>
+<ul>
+<li>Phasen-Verteilung (Balkendiagramm)</li>
+<li>Timeline-Übersicht</li>
+<li>Betroffene Assets-Liste</li>
+</ul>
+<h2 id="verwendung-1">🎯 Verwendung</h2>
+<ol type="1">
+<li><strong>Konfiguration</strong> (Sidebar):
+<ul>
+<li>Wähle Szenario-Typ</li>
+<li>Setze Anzahl Injects</li>
+<li>Aktiviere/deaktiviere erweiterte Optionen</li>
+</ul></li>
+<li><strong>Generierung</strong>:
+<ul>
+<li>Klicke auf “🎯 Szenario generieren”</li>
+<li>Warte auf Abschluss (kann einige Minuten dauern)</li>
+<li>Erfolgsmeldung erscheint</li>
+</ul></li>
+<li><strong>Ergebnisse ansehen</strong>:
+<ul>
+<li>Wechsle zum “📊 Ergebnisse” Tab</li>
+<li>Scrolle durch alle Injects</li>
+<li>Exportiere bei Bedarf</li>
+</ul></li>
+<li><strong>Visualisierung</strong>:
+<ul>
+<li>Wechsle zum “📈 Visualisierung” Tab</li>
+<li>Analysiere Phasen-Verteilung und Timeline</li>
+</ul></li>
+</ol>
+<h2 id="wichtige-hinweise">⚠️ Wichtige Hinweise</h2>
+<ul>
+<li><strong>Neo4j muss laufen</strong>: Stelle sicher, dass Neo4j läuft
+(<code>./start_neo4j.sh</code>)</li>
+<li><strong>OpenAI API Key</strong>: Muss in <code>.env</code>
+konfiguriert sein</li>
+<li><strong>Erste Generierung</strong>: Kann länger dauern
+(LLM-Aufrufe)</li>
+<li><strong>Session State</strong>: Ergebnisse bleiben während der
+Session erhalten</li>
+</ul>
+<h2 id="troubleshooting">🔧 Troubleshooting</h2>
+<h3 id="app-startet-nicht">App startet nicht</h3>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prüfe ob Streamlit installiert ist</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install streamlit</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Prüfe Python-Version</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">--version</span>  <span class="co"># Sollte 3.10+ sein</span></span></code></pre></div>
+<h3 id="neo4j-verbindungsfehler-1">Neo4j-Verbindungsfehler</h3>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Starte Neo4j</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./start_neo4j.sh</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Prüfe Verbindung</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> check_setup.py</span></code></pre></div>
+<h3 id="openai-api-fehler-1">OpenAI API Fehler</h3>
+<ul>
+<li>Prüfe <code>.env</code> Datei</li>
+<li>Stelle sicher, dass <code>OPENAI_API_KEY</code> gesetzt ist</li>
+<li>Prüfe API Key Gültigkeit</li>
+</ul>
+<hr />
+<h1 id="architecture">Architecture</h1>
+<p>Detaillierte Architektur-Diagramme und Beschreibungen des
+DORA-Szenariengenerators.</p>
+<h2 id="übersicht">📊 Übersicht</h2>
+<h3 id="high-level-architektur">High-Level Architektur</h3>
+<pre class="mermaid"><code>graph TB
+    subgraph &quot;Frontend Layer&quot;
+        ST[Streamlit UI]
+    end
+    
+    subgraph &quot;Orchestration Layer&quot;
+        LG[LangGraph Workflow]
+    end
+    
+    subgraph &quot;Agent Layer&quot;
+        MA[Manager Agent]
+        GA[Generator Agent]
+        CA[Critic Agent]
+        IA[Intel Agent]
+    end
+    
+    subgraph &quot;Data Layer&quot;
+        NEO[Neo4j&lt;br/&gt;Knowledge Graph]
+        CHROMA[ChromaDB&lt;br/&gt;Vector DB]
+        LLM[OpenAI GPT-4o]
+    end
+    
+    ST --&gt; LG
+    LG --&gt; MA
+    LG --&gt; GA
+    LG --&gt; CA
+    LG --&gt; IA
+    
+    MA --&gt; LLM
+    GA --&gt; LLM
+    CA --&gt; LLM
+    
+    IA --&gt; CHROMA
+    LG --&gt; NEO
+    GA --&gt; NEO
+    CA --&gt; NEO
+    
+    style ST fill:#1f77b4
+    style LG fill:#ff7f0e
+    style MA fill:#2ca02c
+    style GA fill:#2ca02c
+    style CA fill:#2ca02c
+    style IA fill:#2ca02c
+    style NEO fill:#d62728
+    style CHROMA fill:#9467bd
+    style LLM fill:#8c564b</code></pre>
+<h2 id="workflow-architektur">🔄 Workflow-Architektur</h2>
+<h3 id="langgraph-workflow-flow">LangGraph Workflow Flow</h3>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; StateCheck
+    
+    StateCheck --&gt; Manager: System State
+    Manager --&gt; Intel: Storyline Plan
+    Intel --&gt; ActionSelection: TTPs
+    ActionSelection --&gt; Generator: Selected TTP
+    Generator --&gt; Critic: Draft Inject
+    Critic --&gt; StateUpdate: Valid
+    Critic --&gt; Generator: Invalid (Refine)
+    StateUpdate --&gt; StateCheck: Continue
+    StateUpdate --&gt; [*]: End
+    
+    note right of Critic
+        Max 2 Refine Attempts
+        per Inject
+    end note
+    
+    note right of StateUpdate
+        Updates Neo4j
+        Tracks Second-Order Effects
+    end note</code></pre>
+<h3 id="detaillierter-workflow">Detaillierter Workflow</h3>
+<pre class="mermaid"><code>sequenceDiagram
+    participant User
+    participant Frontend as Streamlit UI
+    participant Workflow as LangGraph Workflow
+    participant Manager as Manager Agent
+    participant Intel as Intel Agent
+    participant Generator as Generator Agent
+    participant Critic as Critic Agent
+    participant Neo4j
+    participant ChromaDB
+    participant OpenAI
+    
+    User-&gt;&gt;Frontend: Configure Scenario
+    Frontend-&gt;&gt;Workflow: Start Generation
+    
+    loop For each Inject
+        Workflow-&gt;&gt;Neo4j: Get Current State
+        Neo4j--&gt;&gt;Workflow: System Entities
+        
+        Workflow-&gt;&gt;Manager: Create Storyline
+        Manager-&gt;&gt;OpenAI: Generate Plan
+        OpenAI--&gt;&gt;Manager: Storyline Plan
+        Manager--&gt;&gt;Workflow: Plan
+        
+        Workflow-&gt;&gt;Intel: Get Relevant TTPs
+        Intel-&gt;&gt;ChromaDB: Query TTPs
+        ChromaDB--&gt;&gt;Intel: TTP List
+        Intel--&gt;&gt;Workflow: TTPs
+        
+        Workflow-&gt;&gt;Workflow: Select Action
+        
+        Workflow-&gt;&gt;Generator: Generate Inject
+        Generator-&gt;&gt;OpenAI: Create Inject
+        OpenAI--&gt;&gt;Generator: Draft Inject
+        Generator--&gt;&gt;Workflow: Inject
+        
+        Workflow-&gt;&gt;Critic: Validate Inject
+        Critic-&gt;&gt;OpenAI: Validate
+        OpenAI--&gt;&gt;Critic: Validation Result
+        Critic--&gt;&gt;Workflow: Result
+        
+        alt Valid
+            Workflow-&gt;&gt;Neo4j: Update State
+            Neo4j--&gt;&gt;Workflow: Updated
+        else Invalid
+            Workflow-&gt;&gt;Generator: Refine (max 2x)
+        end
+    end
+    
+    Workflow--&gt;&gt;Frontend: Scenario Result
+    Frontend--&gt;&gt;User: Display Results</code></pre>
+<h2 id="komponenten-architektur">🧩 Komponenten-Architektur</h2>
+<h3 id="agent-architektur">Agent-Architektur</h3>
+<pre class="mermaid"><code>graph LR
+    subgraph &quot;Manager Agent&quot;
+        M1[Storyline Planning]
+        M2[Phase Transition Logic]
+        M3[LLM Integration]
+    end
+    
+    subgraph &quot;Generator Agent&quot;
+        G1[Inject Creation]
+        G2[Content Generation]
+        G3[Metadata Assignment]
+    end
+    
+    subgraph &quot;Critic Agent&quot;
+        C1[Logical Consistency]
+        C2[DORA Compliance]
+        C3[Causal Validity]
+    end
+    
+    subgraph &quot;Intel Agent&quot;
+        I1[TTP Retrieval]
+        I2[Vector Search]
+        I3[Phase Filtering]
+    end
+    
+    M1 --&gt; M2
+    M2 --&gt; M3
+    
+    G1 --&gt; G2
+    G2 --&gt; G3
+    
+    C1 --&gt; C2
+    C2 --&gt; C3
+    
+    I1 --&gt; I2
+    I2 --&gt; I3
+    
+    style M1 fill:#2ca02c
+    style G1 fill:#2ca02c
+    style C1 fill:#2ca02c
+    style I1 fill:#2ca02c</code></pre>
+<h3 id="state-management-architektur">State Management Architektur</h3>
+<pre class="mermaid"><code>graph TB
+    subgraph &quot;State Models&quot;
+        SM[Pydantic Models]
+        INJ[Inject Schema]
+        SCEN[Scenario State]
+        ENT[Graph Entities]
+    end
+    
+    subgraph &quot;Neo4j Knowledge Graph&quot;
+        N1[Entities&lt;br/&gt;Server, Apps, Depts]
+        N2[Relationships&lt;br/&gt;RUNS_ON, USES]
+        N3[Status Tracking&lt;br/&gt;online, offline, compromised]
+    end
+    
+    subgraph &quot;FSM&quot;
+        F1[Phase States]
+        F2[Transition Rules]
+        F3[Validation Logic]
+    end
+    
+    SM --&gt; INJ
+    SM --&gt; SCEN
+    SM --&gt; ENT
+    
+    ENT --&gt; N1
+    ENT --&gt; N2
+    ENT --&gt; N3
+    
+    SCEN --&gt; F1
+    F1 --&gt; F2
+    F2 --&gt; F3
+    
+    style SM fill:#1f77b4
+    style N1 fill:#d62728
+    style F1 fill:#ff7f0e</code></pre>
+<h2 id="datenfluss">📦 Datenfluss</h2>
+<h3 id="inject-generierungs-pipeline">Inject-Generierungs-Pipeline</h3>
+<pre class="mermaid"><code>flowchart TD
+    START([User Request]) --&gt; CONFIG[Configuration&lt;br/&gt;Type, Count]
+    
+    CONFIG --&gt; LOOP{More Injects?}
+    
+    LOOP --&gt;|Yes| STATE[State Check&lt;br/&gt;Neo4j Query]
+    LOOP --&gt;|No| EXPORT[Export Results]
+    
+    STATE --&gt; PLAN[Manager: Storyline Plan]
+    PLAN --&gt; TTP[Intel: Get TTPs]
+    TTP --&gt; SELECT[Action Selection]
+    SELECT --&gt; GEN[Generator: Create Inject]
+    
+    GEN --&gt; VALID[Critic: Validate]
+    
+    VALID --&gt;|Valid| UPDATE[Update Neo4j State]
+    VALID --&gt;|Invalid| REFINE{Refine Count &lt; 2?}
+    
+    REFINE --&gt;|Yes| GEN
+    REFINE --&gt;|No| UPDATE
+    
+    UPDATE --&gt; LOOP
+    
+    EXPORT --&gt; END([Complete])
+    
+    style START fill:#2ca02c
+    style END fill:#d62728
+    style VALID fill:#ff7f0e
+    style UPDATE fill:#9467bd</code></pre>
+<h2 id="sicherheits-architektur">🔐 Sicherheits-Architektur</h2>
+<h3 id="datenfluss-und-sicherheit">Datenfluss und Sicherheit</h3>
+<pre class="mermaid"><code>graph TB
+    subgraph &quot;Secure Storage&quot;
+        ENV[.env File&lt;br/&gt;NOT in Git]
+        NEO_PASS[Neo4j Password]
+        API_KEY[OpenAI API Key]
+    end
+    
+    subgraph &quot;Application&quot;
+        APP[Streamlit App]
+        WORKFLOW[Workflow]
+    end
+    
+    subgraph &quot;External Services&quot;
+        OPENAI[OpenAI API]
+        NEO4J[Neo4j Database]
+    end
+    
+    ENV --&gt; APP
+    NEO_PASS --&gt; NEO4J
+    API_KEY --&gt; OPENAI
+    
+    APP --&gt; WORKFLOW
+    WORKFLOW --&gt; OPENAI
+    WORKFLOW --&gt; NEO4J
+    
+    style ENV fill:#d62728
+    style NEO_PASS fill:#d62728
+    style API_KEY fill:#d62728</code></pre>
+<h2 id="datenmodell-1">🗄️ Datenmodell</h2>
+<h3 id="entity-relationship-diagram">Entity-Relationship Diagram</h3>
+<pre class="mermaid"><code>erDiagram
+    SCENARIO ||--o{ INJECT : contains
+    SCENARIO {
+        string scenario_id
+        enum scenario_type
+        enum current_phase
+        datetime start_time
+    }
+    
+    INJECT ||--|| TECHNICAL_METADATA : has
+    INJECT {
+        string inject_id
+        string time_offset
+        enum phase
+        string source
+        string target
+        string content
+        string dora_compliance_tag
+    }
+    
+    TECHNICAL_METADATA {
+        string mitre_id
+        array affected_assets
+        string ioc_hash
+        string severity
+    }
+    
+    ENTITY ||--o{ RELATIONSHIP : has
+    ENTITY {
+        string entity_id
+        string entity_type
+        string name
+        string status
+    }
+    
+    RELATIONSHIP {
+        string source_id
+        string target_id
+        string relationship_type
+    }
+    
+    INJECT ||--o{ ENTITY : affects</code></pre>
+<h2 id="phasen-übergänge-fsm">🔄 Phasen-Übergänge (FSM)</h2>
+<h3 id="finite-state-machine">Finite State Machine</h3>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; NORMAL_OPERATION
+    
+    NORMAL_OPERATION --&gt; SUSPICIOUS_ACTIVITY : Detection
+    NORMAL_OPERATION --&gt; INITIAL_INCIDENT : Direct Attack
+    
+    SUSPICIOUS_ACTIVITY --&gt; INITIAL_INCIDENT : Confirmed
+    SUSPICIOUS_ACTIVITY --&gt; NORMAL_OPERATION : False Positive
+    
+    INITIAL_INCIDENT --&gt; ESCALATION_CRISIS : Severe Impact
+    INITIAL_INCIDENT --&gt; CONTAINMENT : Quick Response
+    
+    ESCALATION_CRISIS --&gt; CONTAINMENT : Response Actions
+    
+    CONTAINMENT --&gt; RECOVERY : Systems Restored
+    CONTAINMENT --&gt; ESCALATION_CRISIS : Re-Escalation
+    
+    RECOVERY --&gt; NORMAL_OPERATION : Full Recovery
+    
+    note right of NORMAL_OPERATION
+        Baseline State
+        All Systems Operational
+    end note
+    
+    note right of ESCALATION_CRISIS
+        Critical State
+        Business Impact
+    end note</code></pre>
+<h2 id="deployment-architektur">📊 Deployment-Architektur</h2>
+<h3 id="lokale-entwicklung">Lokale Entwicklung</h3>
+<pre class="mermaid"><code>graph TB
+    subgraph &quot;Development Machine&quot;
+        DEV[Developer]
+        IDE[IDE/Editor]
+        VENV[Python venv]
+        STREAMLIT[Streamlit App]
+    end
+    
+    subgraph &quot;Local Services&quot;
+        DOCKER[Docker]
+        NEO4J_LOCAL[Neo4j Container]
+    end
+    
+    subgraph &quot;External Services&quot;
+        OPENAI_API[OpenAI API]
+    end
+    
+    DEV --&gt; IDE
+    IDE --&gt; VENV
+    VENV --&gt; STREAMLIT
+    STREAMLIT --&gt; NEO4J_LOCAL
+    STREAMLIT --&gt; OPENAI_API
+    DOCKER --&gt; NEO4J_LOCAL
+    
+    style DEV fill:#2ca02c
+    style NEO4J_LOCAL fill:#d62728
+    style OPENAI_API fill:#8c564b</code></pre>
+<h2 id="technologie-stack">🔧 Technologie-Stack</h2>
+<h3 id="technologie-layers">Technologie-Layers</h3>
+<pre><code>┌─────────────────────────────────────────┐
+│         Frontend Layer                  │
+│  ┌───────────────────────────────────┐ │
+│  │      Streamlit UI                 │ │
+│  │  - Parameter Input                │ │
+│  │  - Visualization                  │ │
+│  │  - Export Functions               │ │
+│  └───────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│      Orchestration Layer                │
+│  ┌───────────────────────────────────┐ │
+│  │      LangGraph Workflow            │ │
+│  │  - State Management                │ │
+│  │  - Node Orchestration              │ │
+│  │  - Conditional Edges              │ │
+│  └───────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+┌───────────┐ ┌───────────┐ ┌───────────┐
+│  Manager  │ │ Generator │ │  Critic   │
+│   Agent   │ │   Agent   │ │   Agent   │
+└───────────┘ └───────────┘ └───────────┘
+        │           │           │
+        └───────────┼───────────┘
+                    ▼
+┌─────────────────────────────────────────┐
+│         Data Layer                      │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐│
+│  │  Neo4j   │ │ ChromaDB │ │  OpenAI  ││
+│  │  Graph   │ │  Vector  │ │   API    ││
+│  └──────────┘ └──────────┘ └──────────┘│
+└─────────────────────────────────────────┘</code></pre>
+<h2 id="skalierungs-architektur">📈 Skalierungs-Architektur</h2>
+<h3 id="zukünftige-erweiterungen">Zukünftige Erweiterungen</h3>
+<pre class="mermaid"><code>graph TB
+    subgraph &quot;Current MVP&quot;
+        C1[Single User]
+        C2[Local Neo4j]
+        C3[Streamlit Frontend]
+    end
+    
+    subgraph &quot;Future: Multi-User&quot;
+        F1[User Management]
+        F2[Project Sharing]
+        F3[Collaboration]
+    end
+    
+    subgraph &quot;Future: Cloud&quot;
+        F4[Neo4j Cloud]
+        F5[API Gateway]
+        F6[Load Balancer]
+    end
+    
+    C1 --&gt; F1
+    C2 --&gt; F4
+    C3 --&gt; F5
+    
+    style C1 fill:#2ca02c
+    style C2 fill:#2ca02c
+    style C3 fill:#2ca02c
+    style F1 fill:#ff7f0e
+    style F4 fill:#ff7f0e
+    style F5 fill:#ff7f0e</code></pre>
+<h2 id="legende">📝 Legende</h2>
+<h3 id="farb-codierung">Farb-Codierung</h3>
+<ul>
+<li>🔵 <strong>Blau</strong>: Frontend/UI Komponenten</li>
+<li>🟠 <strong>Orange</strong>: Orchestration/Workflow</li>
+<li>🟢 <strong>Grün</strong>: Agenten</li>
+<li>🔴 <strong>Rot</strong>: Datenbanken/Storage</li>
+<li>🟣 <strong>Lila</strong>: Externe Services</li>
+<li>🟤 <strong>Braun</strong>: LLM/API Services</li>
+</ul>
+<h3 id="diagramm-typen">Diagramm-Typen</h3>
+<ul>
+<li><strong>Mermaid</strong>: Wird von GitHub und vielen
+Markdown-Viewern unterstützt</li>
+<li><strong>ASCII</strong>: Fallback für einfache Text-Editoren</li>
+<li><strong>Flowcharts</strong>: Für Prozess-Flows</li>
+<li><strong>State Diagrams</strong>: Für FSM und Zustandsübergänge</li>
+<li><strong>Sequence Diagrams</strong>: Für Interaktionen zwischen
+Komponenten</li>
+</ul>
+<h2 id="verwandte-dokumentation">🔗 Verwandte Dokumentation</h2>
+<ul>
+<li><a href="README.md">README.md</a> - Hauptdokumentation</li>
+<li><a href="STATUS.md">STATUS.md</a> - Feature-Status</li>
+<li><a href="SETUP.md">SETUP.md</a> - Setup-Anleitung</li>
+</ul>
+<hr />
+<h1 id="documentation">Documentation</h1>
+<p>Übersicht aller verfügbaren Dokumentationen für den
+DORA-Szenariengenerator.</p>
+<h2 id="schnelleinstieg">🚀 Schnelleinstieg</h2>
+<h3 id="für-neue-nutzer">Für neue Nutzer</h3>
+<ol type="1">
+<li><strong><a href="QUICKSTART.md">QUICKSTART.md</a></strong> - In 5
+Minuten zum ersten Szenario</li>
+<li><strong><a href="SETUP.md">SETUP.md</a></strong> - Detaillierte
+Setup-Anleitung</li>
+<li><strong><a href="FRONTEND.md">FRONTEND.md</a></strong> -
+Frontend-Bedienungsanleitung</li>
+</ol>
+<h2 id="hauptdokumentation">📖 Hauptdokumentation</h2>
+<h3 id="readme.md"><a href="README.md">README.md</a></h3>
+<p><strong>Hauptdokumentation des Projekts</strong> - Projektziel und
+Architektur - Tech Stack Übersicht - Setup-Anleitung -
+Verwendungsbeispiele - Komponenten-Übersicht</p>
+<h3 id="architecture.md"><a
+href="ARCHITECTURE.md">ARCHITECTURE.md</a></h3>
+<p><strong>Detaillierte Architektur-Dokumentation</strong> - High-Level
+Architektur-Diagramme - Workflow-Diagramme (Mermaid) -
+Komponenten-Architektur - Datenfluss-Diagramme - FSM (Finite State
+Machine) Diagramme - Entity-Relationship Diagramme</p>
+<h2 id="status-capabilities">📊 Status &amp; Capabilities</h2>
+<h3 id="status.md"><a href="STATUS.md">STATUS.md</a></h3>
+<p><strong>Detaillierte Status-Übersicht</strong> - ✅ Was das System
+jetzt kann - ⚠️ Was noch fehlt / Verbesserungspotenzial - 🚀 Wie das
+System eingesetzt werden kann - 📈 Roadmap - 🎓 Best Practices</p>
+<p><strong>Empfohlen für:</strong> - Projekt-Manager - Entwickler, die
+Features hinzufügen wollen - Stakeholder, die den aktuellen Stand
+verstehen wollen</p>
+<h2 id="setup-installation">🔧 Setup &amp; Installation</h2>
+<h3 id="setup.md"><a href="SETUP.md">SETUP.md</a></h3>
+<p><strong>Detaillierte Setup-Anleitung</strong> - Schritt-für-Schritt
+Installation - Umgebungsvariablen-Konfiguration - Neo4j Setup -
+Troubleshooting</p>
+<h3 id="quickstart.md"><a href="QUICKSTART.md">QUICKSTART.md</a></h3>
+<p><strong>Schnellstart in 5 Minuten</strong> - Minimales Setup - Erste
+Schritte - Häufige Probleme</p>
+<h2 id="frontend-1">🎨 Frontend</h2>
+<h3 id="frontend.md"><a href="FRONTEND.md">FRONTEND.md</a></h3>
+<p><strong>Streamlit Frontend Anleitung</strong> - Features-Übersicht -
+Verwendungsanleitung - Tabs-Erklärung - Export-Funktionen -
+Troubleshooting</p>
+<h2 id="code-dokumentation">💻 Code-Dokumentation</h2>
+<h3 id="python-dateien">Python-Dateien</h3>
+<p>Alle Python-Module enthalten Docstrings:</p>
+<ul>
+<li><strong><code>state_models.py</code></strong>: Pydantic-Modelle mit
+vollständiger Dokumentation</li>
+<li><strong><code>neo4j_client.py</code></strong>: Neo4j Client mit
+Methoden-Dokumentation</li>
+<li><strong><code>workflows/scenario_workflow.py</code></strong>:
+LangGraph Workflow</li>
+<li><strong><code>agents/</code></strong>: Alle Agenten mit
+Funktions-Dokumentation</li>
+</ul>
+<h3 id="test-dateien">Test-Dateien</h3>
+<ul>
+<li><strong><code>test_setup.py</code></strong>: Setup-Tests</li>
+<li><strong><code>test_workflow.py</code></strong>: Workflow-Tests</li>
+<li><strong><code>check_setup.py</code></strong>: Erweiterte
+Setup-Prüfung</li>
+</ul>
+<h2 id="verwendungsbeispiele">📋 Verwendungsbeispiele</h2>
+<h3 id="frontend-empfohlen-1">Frontend (Empfohlen)</h3>
+<div class="sourceCode" id="cb50"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="ex">streamlit</span> run app.py</span></code></pre></div>
+<p>Siehe <a href="FRONTEND.md">FRONTEND.md</a></p>
+<h3 id="programmgesteuert">Programmgesteuert</h3>
+<div class="sourceCode" id="cb51"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> neo4j_client <span class="im">import</span> Neo4jClient</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> workflows.scenario_workflow <span class="im">import</span> ScenarioWorkflow</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> state_models <span class="im">import</span> ScenarioType</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>neo4j <span class="op">=</span> Neo4jClient()</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>neo4j.<span class="ex">connect</span>()</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>workflow <span class="op">=</span> ScenarioWorkflow(neo4j_client<span class="op">=</span>neo4j, max_iterations<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> workflow.generate_scenario(ScenarioType.RANSOMWARE_DOUBLE_EXTORTION)</span></code></pre></div>
+<p>Siehe <a href="README.md">README.md</a> für weitere Beispiele.</p>
+<h2 id="dokumentations-struktur">🗂️ Dokumentations-Struktur</h2>
+<pre><code>BA/
+├── README.md          # Hauptdokumentation
+├── ARCHITECTURE.md    # Architektur-Diagramme
+├── STATUS.md          # Status &amp; Capabilities
+├── QUICKSTART.md      # Schnellstart
+├── SETUP.md           # Setup-Anleitung
+├── FRONTEND.md        # Frontend-Anleitung
+├── DOCUMENTATION.md    # Diese Datei
+│
+├── state_models.py     # Code-Dokumentation (Docstrings)
+├── neo4j_client.py    # Code-Dokumentation (Docstrings)
+├── workflows/         # Workflow-Dokumentation
+└── agents/            # Agenten-Dokumentation</code></pre>
+<h2 id="nach-anwendungsfall">🎯 Nach Anwendungsfall</h2>
+<h3 id="ich-möchte">Ich möchte…</h3>
+<ul>
+<li><strong>…schnell starten</strong>: <a
+href="QUICKSTART.md">QUICKSTART.md</a></li>
+<li><strong>…alles verstehen</strong>: <a
+href="README.md">README.md</a></li>
+<li><strong>…den aktuellen Stand wissen</strong>: <a
+href="STATUS.md">STATUS.md</a></li>
+<li><strong>…das Frontend nutzen</strong>: <a
+href="FRONTEND.md">FRONTEND.md</a></li>
+<li><strong>…Setup-Probleme lösen</strong>: <a
+href="SETUP.md">SETUP.md</a></li>
+<li><strong>…Code verstehen</strong>: Siehe Docstrings in den
+Python-Dateien</li>
+</ul>
+<h2 id="support">📞 Support</h2>
+<p>Bei Fragen oder Problemen: 1. Prüfe die entsprechende Dokumentation
+2. Siehe Troubleshooting-Abschnitte 3. Prüfe <code>check_setup.py</code>
+für System-Status</p>
+<h2 id="dokumentation-aktualisieren">🔄 Dokumentation aktualisieren</h2>
+<p>Diese Dokumentationen werden regelmäßig aktualisiert: -
+<strong>README.md</strong>: Bei größeren Änderungen -
+<strong>STATUS.md</strong>: Bei neuen Features oder Änderungen -
+<strong>Code-Dokumentation</strong>: Bei Code-Änderungen</p>
+<p><strong>Letzte Aktualisierung</strong>: 2025-01-XX</p>
+<hr />
+</body>
+</html>
