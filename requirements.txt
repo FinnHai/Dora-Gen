@@ -1,0 +1,30 @@
+# Core Dependencies
+# Python 3.10+ wird benötigt (nicht als pip-Paket installierbar)
+
+# LangGraph & LangChain
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-openai>=0.1.0
+langchain-community>=0.3.0
+
+# LLM Providers
+openai>=1.0.0
+
+# Knowledge Graph
+neo4j>=5.15.0
+
+# Vector Database
+chromadb>=0.4.0
+
+# Data Processing
+pandas>=2.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Frontend
+streamlit>=1.28.0
+
+# Utilities
+python-dotenv>=1.0.0
+typing-extensions>=4.8.0
+
