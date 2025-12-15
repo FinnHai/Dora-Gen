@@ -19,6 +19,15 @@
 - Verwendungsbeispiele
 - Komponenten-Übersicht
 
+### [ARCHITECTURE.md](ARCHITECTURE.md)
+**Detaillierte Architektur-Dokumentation**
+- High-Level Architektur-Diagramme
+- Workflow-Diagramme (Mermaid)
+- Komponenten-Architektur
+- Datenfluss-Diagramme
+- FSM (Finite State Machine) Diagramme
+- Entity-Relationship Diagramme
+
 ## 📊 Status & Capabilities
 
 ### [STATUS.md](STATUS.md)
@@ -102,6 +111,7 @@ Siehe [README.md](README.md) für weitere Beispiele.
 ```
 BA/
 ├── README.md          # Hauptdokumentation
+├── ARCHITECTURE.md    # Architektur-Diagramme
 ├── STATUS.md          # Status & Capabilities
 ├── QUICKSTART.md      # Schnellstart
 ├── SETUP.md           # Setup-Anleitung

@@ -12,6 +12,49 @@ Das System verwendet **Generative KI (LLMs)**, **Multi-Agenten-Systeme** und **K
 
 ## 🏗️ Architektur
 
+### High-Level Übersicht
+
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        ST[Streamlit UI]
+    end
+    
+    subgraph "Orchestration Layer"
+        LG[LangGraph Workflow]
+    end
+    
+    subgraph "Agent Layer"
+        MA[Manager Agent]
+        GA[Generator Agent]
+        CA[Critic Agent]
+        IA[Intel Agent]
+    end
+    
+    subgraph "Data Layer"
+        NEO[Neo4j<br/>Knowledge Graph]
+        CHROMA[ChromaDB<br/>Vector DB]
+        LLM[OpenAI GPT-4o]
+    end
+    
+    ST --> LG
+    LG --> MA
+    LG --> GA
+    LG --> CA
+    LG --> IA
+    
+    MA --> LLM
+    GA --> LLM
+    CA --> LLM
+    
+    IA --> CHROMA
+    LG --> NEO
+    GA --> NEO
+    CA --> NEO
+```
+
+**📊 Detaillierte Architektur-Diagramme**: Siehe [ARCHITECTURE.md](ARCHITECTURE.md)
+
 ### Tech Stack
 
 - **Sprache:** Python 3.10+
@@ -150,6 +193,23 @@ result = workflow.generate_scenario(ScenarioType.RANSOMWARE_DOUBLE_EXTORTION)
 
 Der LangGraph-basierte Workflow orchestriert folgende Schritte:
 
+```mermaid
+stateDiagram-v2
+    [*] --> StateCheck
+    
+    StateCheck --> Manager: System State
+    Manager --> Intel: Storyline Plan
+    Intel --> ActionSelection: TTPs
+    ActionSelection --> Generator: Selected TTP
+    Generator --> Critic: Draft Inject
+    Critic --> StateUpdate: Valid
+    Critic --> Generator: Invalid (Refine)
+    StateUpdate --> StateCheck: Continue
+    StateUpdate --> [*]: End
+```
+
+**Detaillierte Schritte:**
+
 1. **State Check**: Abfrage des aktuellen Systemzustands aus Neo4j
 2. **Manager Agent**: Erstellt Storyline-Plan basierend auf Szenario-Typ und Phase
 3. **Intel Agent**: Stellt relevante MITRE ATT&CK TTPs bereit
@@ -158,6 +218,8 @@ Der LangGraph-basierte Workflow orchestriert folgende Schritte:
 6. **Critic Agent**: Validiert Logik, DORA-Konformität und Causal Validity
 7. **State Update**: Schreibt Auswirkungen in Neo4j (inkl. Second-Order Effects)
 8. **Refine Loop**: Bei Validierungsfehlern zurück zum Generator (max. 2 Versuche)
+
+**📊 Vollständige Workflow-Diagramme**: Siehe [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## 📊 Szenario-Typen
 
