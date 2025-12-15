@@ -166,14 +166,34 @@ Antworte im JSON-Format.""")
         
         chain = prompt | self.llm
         
+        # Retry-Logik für LLM-Call
+        from utils.retry_handler import safe_llm_call
+        
         try:
-            response = chain.invoke({
-                "inject": inject_str,
-                "current_phase": current_phase.value,
-                "previous_injects": previous_injects_str,
-                "system_state": system_state_str,
-                "mitre_id": inject.technical_metadata.mitre_id or "Unknown"
-            })
+            def _invoke_chain():
+                return chain.invoke({
+                    "inject": inject_str,
+                    "current_phase": current_phase.value,
+                    "previous_injects": previous_injects_str,
+                    "system_state": system_state_str,
+                    "mitre_id": inject.technical_metadata.mitre_id or "Unknown"
+                })
+            
+            response = safe_llm_call(
+                _invoke_chain,
+                max_attempts=3,
+                default_return=None
+            )
+            
+            if response is None:
+                # Fallback: Akzeptiere Inject mit Warnung
+                return {
+                    "logical_consistency": True,
+                    "dora_compliance": True,
+                    "causal_validity": True,
+                    "errors": [],
+                    "warnings": ["Validierung konnte nicht durchgeführt werden - LLM-Call fehlgeschlagen"]
+                }
             
             # Parse JSON
             import json

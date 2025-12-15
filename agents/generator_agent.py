@@ -138,18 +138,31 @@ WICHTIG:
         
         chain = prompt | self.llm
         
+        # Retry-Logik für LLM-Call
+        from utils.retry_handler import safe_llm_call
+        
         try:
-            response = chain.invoke({
-                "scenario_type": scenario_type.value,
-                "inject_id": inject_id,
-                "time_offset": time_offset,
-                "phase": phase.value,
-                "ttp_name": ttp_name,
-                "ttp_id": ttp_id,
-                "manager_plan": manager_plan_str,
-                "system_state": system_state_str,
-                "previous_injects": previous_injects_str
-            })
+            def _invoke_chain():
+                return chain.invoke({
+                    "scenario_type": scenario_type.value,
+                    "inject_id": inject_id,
+                    "time_offset": time_offset,
+                    "phase": phase.value,
+                    "ttp_name": ttp_name,
+                    "ttp_id": ttp_id,
+                    "manager_plan": manager_plan_str,
+                    "system_state": system_state_str,
+                    "previous_injects": previous_injects_str
+                })
+            
+            response = safe_llm_call(
+                _invoke_chain,
+                max_attempts=3,
+                default_return=None
+            )
+            
+            if response is None:
+                raise Exception("LLM-Call fehlgeschlagen nach mehreren Versuchen")
             
             # Parse JSON aus Response
             content = response.content

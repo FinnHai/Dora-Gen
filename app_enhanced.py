@@ -15,7 +15,6 @@ from plotly.subplots import make_subplots
 from neo4j_client import Neo4jClient
 from workflows.scenario_workflow import ScenarioWorkflow
 from state_models import ScenarioType, CrisisPhase, Inject
-from demo_scenarios import get_available_demo_scenarios, load_demo_scenario
 import os
 from dotenv import load_dotenv
 import html
@@ -308,79 +307,95 @@ def get_phase_color(phase: CrisisPhase) -> tuple:
 
 
 def format_inject_card_safe(inject: Inject, index: int):
-    """Formatiert eine Inject-Karte mit Streamlit-native Komponenten."""
+    """Formatiert eine Inject-Karte mit korrekter HTML-Escape."""
     phase_color, icon, phase_label = get_phase_color(inject.phase)
     
-    # Container mit Border-Left (nur für visuellen Effekt)
-    st.markdown(f"""
-    <div style="border-left: 4px solid {phase_color}; margin-bottom: 2rem;">
-    </div>
-    """, unsafe_allow_html=True)
+    # Escape HTML in Content
+    safe_content = html.escape(inject.content)
+    safe_source = html.escape(inject.source)
+    safe_target = html.escape(inject.target)
+    safe_mitre = html.escape(inject.technical_metadata.mitre_id or 'N/A')
+    safe_assets = ', '.join([html.escape(a) for a in inject.technical_metadata.affected_assets]) if inject.technical_metadata.affected_assets else 'Keine'
+    safe_dora = html.escape(inject.dora_compliance_tag) if inject.dora_compliance_tag else None
+    safe_impact = html.escape(inject.business_impact) if inject.business_impact else None
     
-    # Header mit ID und Phase Badge
-    col_header1, col_header2 = st.columns([3, 1])
-    with col_header1:
-        st.markdown(f"### {icon} {inject.inject_id}")
-        st.caption(f"**Zeitversatz:** {inject.time_offset}")
-    with col_header2:
-        st.markdown(f"""
-        <div style="text-align: right; margin-top: 0.5rem;">
-            <span style="background: {phase_color}; color: white; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    st.markdown(f"""
+    <div class="inject-card fade-in" style="border-left-color: {phase_color};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 style="margin: 0; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">
+                    {icon} {inject.inject_id}
+                </h3>
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    <strong>Zeitversatz:</strong> {inject.time_offset}
+                </p>
+            </div>
+            <span class="phase-badge" style="background: {phase_color}; color: white;">
                 {phase_label}
             </span>
         </div>
-        """, unsafe_allow_html=True)
-    
-    # Quelle und Ziel
-    col_source, col_target = st.columns(2)
-    with col_source:
-        st.markdown("**📡 Quelle**")
-        st.info(inject.source)
-    with col_target:
-        st.markdown("**🎯 Ziel**")
-        st.info(inject.target)
-    
-    # Inhalt
-    st.markdown("**📝 Inhalt**")
-    with st.container():
-        st.markdown(f'<div style="padding: 1rem; background: #f7fafc; border-radius: 8px; border: 1px solid #e2e8f0;">{html.escape(inject.content)}</div>', unsafe_allow_html=True)
-    
-    # MITRE und Modalität
-    col_mitre, col_modality = st.columns(2)
-    with col_mitre:
-        st.markdown("**🔍 MITRE ATT&CK**")
-        mitre_id = inject.technical_metadata.mitre_id or 'N/A'
-        st.code(mitre_id, language=None)
-    with col_modality:
-        st.markdown("**📨 Modalität**")
-        st.markdown(f"**{inject.modality.value}**")
-    
-    # Betroffene Assets
-    st.markdown("**🎯 Betroffene Assets**")
-    if inject.technical_metadata.affected_assets:
-        # Erstelle Tags mit Streamlit
-        asset_cols = st.columns(min(len(inject.technical_metadata.affected_assets), 5))
-        for idx, asset in enumerate(inject.technical_metadata.affected_assets[:5]):
-            with asset_cols[idx]:
-                st.markdown(f"""
-                <div style="background: #4299e1; color: white; padding: 0.5rem; border-radius: 6px; text-align: center; font-size: 0.75rem; font-weight: 500;">
-                    {html.escape(asset)}
-                </div>
-                """, unsafe_allow_html=True)
-        if len(inject.technical_metadata.affected_assets) > 5:
-            st.caption(f"+ {len(inject.technical_metadata.affected_assets) - 5} weitere Assets")
-    else:
-        st.caption("Keine Assets betroffen")
-    
-    # DORA Compliance
-    if inject.dora_compliance_tag:
-        st.info(f"🏛️ **DORA Compliance:** {inject.dora_compliance_tag}")
-    
-    # Business Impact
-    if inject.business_impact:
-        st.warning(f"💼 **Business Impact:** {inject.business_impact}")
-    
-    st.markdown("---")
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div style="background: #f7fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);"><strong>📡 Quelle</strong></p>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-primary); font-weight: 500;">{safe_source}</p>
+            </div>
+            <div style="background: #f7fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);"><strong>🎯 Ziel</strong></p>
+                <p style="margin: 0.5rem 0 0 0; color: var(--text-primary); font-weight: 500;">{safe_target}</p>
+            </div>
+        </div>
+        
+        <div style="background: #f7fafc; padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
+            <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); font-weight: 600;">
+                📝 Inhalt
+            </p>
+            <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">
+                {safe_content}
+            </p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+            <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); font-weight: 600;">
+                    🔍 MITRE ATT&CK
+                </p>
+                <code style="background: #edf2f7; color: var(--primary-dark); padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600;">
+                    {safe_mitre}
+                </code>
+            </div>
+            <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); font-weight: 600;">
+                    📨 Modalität
+                </p>
+                <p style="margin: 0; color: var(--text-primary); font-weight: 500; font-size: 0.875rem;">
+                    {inject.modality.value}
+                </p>
+            </div>
+        </div>
+        
+        <div style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
+            <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); font-weight: 600;">
+                🎯 Betroffene Assets
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {''.join([f'<span style="background: var(--primary-light); color: white; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500;">{html.escape(asset)}</span>' for asset in inject.technical_metadata.affected_assets]) if inject.technical_metadata.affected_assets else '<span style="color: var(--text-secondary); font-size: 0.875rem;">Keine Assets betroffen</span>'}
+            </div>
+        </div>
+        
+        {f'''
+        <div style="background: linear-gradient(135deg, #e6f3ff 0%, #cce7ff 100%); padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 3px solid var(--info);">
+            <p style="margin: 0; font-size: 0.875rem;"><strong style="color: var(--primary-dark);">🏛️ DORA Compliance:</strong> <span style="color: var(--text-primary);">{safe_dora}</span></p>
+        </div>
+        ''' if safe_dora else ''}
+        
+        {f'''
+        <div style="background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--warning);">
+            <p style="margin: 0; font-size: 0.875rem;"><strong style="color: #b7791f;">💼 Business Impact:</strong> <span style="color: var(--text-primary);">{safe_impact}</span></p>
+        </div>
+        ''' if safe_impact else ''}
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def create_workflow_timeline(logs: list, decisions: list):
@@ -601,140 +616,6 @@ def export_to_json(injects: list) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False, default=str)
 
 
-def export_to_excel(injects: list) -> BytesIO:
-    """Exportiert Injects als Excel-Datei (.xlsx)."""
-    try:
-        from openpyxl import Workbook
-        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-        from openpyxl.utils import get_column_letter
-        
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Injects"
-        
-        # Header
-        headers = [
-            "Inject ID", "Time Offset", "Phase", "Source", "Target", 
-            "Modality", "Content", "MITRE ID", "Affected Assets", 
-            "DORA Tag", "Business Impact", "IOC Hash"
-        ]
-        
-        # Header-Styling
-        header_fill = PatternFill(start_color="2c5282", end_color="2c5282", fill_type="solid")
-        header_font = Font(bold=True, color="FFFFFF", size=11)
-        border = Border(
-            left=Side(style='thin'),
-            right=Side(style='thin'),
-            top=Side(style='thin'),
-            bottom=Side(style='thin')
-        )
-        
-        # Schreibe Header
-        for col_num, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col_num, value=header)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            cell.border = border
-        
-        # Schreibe Daten
-        for row_num, inj in enumerate(injects, 2):
-            data_row = [
-                inj.inject_id,
-                inj.time_offset,
-                inj.phase.value,
-                inj.source,
-                inj.target,
-                inj.modality.value,
-                inj.content,
-                inj.technical_metadata.mitre_id or "",
-                ", ".join(inj.technical_metadata.affected_assets),
-                inj.dora_compliance_tag or "",
-                inj.business_impact or "",
-                inj.technical_metadata.ioc_hash or ""
-            ]
-            
-            for col_num, value in enumerate(data_row, 1):
-                cell = ws.cell(row=row_num, column=col_num, value=value)
-                cell.border = border
-                if col_num == 7:  # Content-Spalte
-                    cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
-                else:
-                    cell.alignment = Alignment(horizontal="left", vertical="center")
-        
-        # Spaltenbreiten anpassen
-        column_widths = {
-            'A': 12,  # Inject ID
-            'B': 12,  # Time Offset
-            'C': 20,  # Phase
-            'D': 25,  # Source
-            'E': 25,  # Target
-            'F': 15,  # Modality
-            'G': 60,  # Content
-            'H': 12,  # MITRE ID
-            'I': 30,  # Affected Assets
-            'J': 25,  # DORA Tag
-            'K': 50,  # Business Impact
-            'L': 20   # IOC Hash
-        }
-        
-        for col_letter, width in column_widths.items():
-            ws.column_dimensions[col_letter].width = width
-        
-        # Zeilenhöhe für Content-Spalte
-        for row in range(2, len(injects) + 2):
-            ws.row_dimensions[row].height = 60
-        
-        # Freeze Header
-        ws.freeze_panes = 'A2'
-        
-        # Speichere in BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-        return output
-        
-    except ImportError:
-        raise ImportError("openpyxl ist nicht installiert. Bitte installiere es mit: pip install openpyxl")
-    except Exception as e:
-        raise Exception(f"Fehler beim Excel-Export: {e}")
-
-
-def export_to_msel(injects: list) -> str:
-    """
-    Exportiert Injects im MSEL-Format (Master Scenario Event List).
-    
-    MSEL ist ein Standard-Format für Krisenübungen.
-    Format: Tab-separiert mit spezifischen Spalten.
-    """
-    lines = []
-    
-    # MSEL Header
-    lines.append("MSEL Version 1.0")
-    lines.append("Generated by DORA Scenario Generator")
-    lines.append("")
-    lines.append("Time\tInject ID\tPhase\tSource\tTarget\tModality\tContent\tMITRE ID\tAssets\tDORA Tag\tBusiness Impact")
-    
-    # Daten
-    for inj in injects:
-        line = "\t".join([
-            inj.time_offset,
-            inj.inject_id,
-            inj.phase.value,
-            inj.source,
-            inj.target,
-            inj.modality.value,
-            inj.content.replace("\n", " ").replace("\t", " "),  # Tabs und Newlines entfernen
-            inj.technical_metadata.mitre_id or "",
-            ", ".join(inj.technical_metadata.affected_assets),
-            inj.dora_compliance_tag or "",
-            (inj.business_impact or "").replace("\n", " ").replace("\t", " ")
-        ])
-        lines.append(line)
-    
-    return "\n".join(lines)
-
-
 def main():
     """Hauptfunktion der Streamlit App."""
     init_session_state()
@@ -847,10 +728,6 @@ def main():
             """, unsafe_allow_html=True)
         
         with col2:
-            st.markdown("""
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            """, unsafe_allow_html=True)
-            
             if st.button("🎯 Szenario generieren", type="primary", use_container_width=True):
                 with st.spinner("🔄 Generiere Szenario... (Dies kann einige Minuten dauern)"):
                     try:
@@ -878,29 +755,6 @@ def main():
                         import traceback
                         with st.expander("🔍 Detaillierte Fehlerinformationen"):
                             st.code(traceback.format_exc())
-            
-            st.markdown("---")
-            st.markdown("**🧪 Demo-Szenarien zum Testen:**")
-            
-            demo_scenarios = get_available_demo_scenarios()
-            selected_demo = st.selectbox(
-                "Wähle Demo-Szenario",
-                options=[""] + list(demo_scenarios.keys()),
-                format_func=lambda x: "Bitte wählen..." if x == "" else x,
-                help="Lade ein vordefiniertes Demo-Szenario zum schnellen Testen"
-            )
-            
-            if st.button("📥 Demo-Szenario laden", use_container_width=True, disabled=not selected_demo):
-                try:
-                    demo_result = load_demo_scenario(selected_demo)
-                    st.session_state.scenario_result = demo_result
-                    st.success(f"✅ Demo-Szenario geladen! ({len(demo_result.get('injects', []))} Injects)")
-                    st.info("💡 **Hinweis:** Dies ist ein Demo-Szenario zum Testen. Für echte Szenarien nutze 'Szenario generieren'.")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"❌ Fehler beim Laden des Demo-Szenarios: {e}")
-            
-            st.markdown("</div>", unsafe_allow_html=True)
         
         if st.session_state.scenario_result:
             result = st.session_state.scenario_result
@@ -948,7 +802,6 @@ def main():
                         <div class="metric-label">Injects</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.caption("📊 Gesamtanzahl der generierten Injects im Szenario")
                 
                 with col2:
                     unique_phases = len(set(inj.phase for inj in injects))
@@ -958,7 +811,6 @@ def main():
                         <div class="metric-label">Phasen</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.caption("🔄 Anzahl verschiedener Krisenphasen im Szenario")
                 
                 with col3:
                     all_assets = set()
@@ -970,7 +822,6 @@ def main():
                         <div class="metric-label">Assets</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.caption("🎯 Anzahl betroffener Assets/Systeme")
                 
                 with col4:
                     mitre_ids = set(inj.technical_metadata.mitre_id for inj in injects if inj.technical_metadata.mitre_id)
@@ -980,7 +831,6 @@ def main():
                         <div class="metric-label">MITRE TTPs</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.caption("🔍 Anzahl verschiedener MITRE ATT&CK Taktiken")
                 
                 with col5:
                     st.markdown(f"""
@@ -989,7 +839,6 @@ def main():
                         <div class="metric-label">Workflow Logs</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.caption("📋 Anzahl Workflow-Operationen")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 
@@ -997,43 +846,17 @@ def main():
                 col_chart1, col_chart2 = st.columns(2)
                 
                 with col_chart1:
-                    st.markdown("""
-                    <div style="margin-bottom: 0.5rem;">
-                        <h4 style="margin: 0; color: var(--text-primary); font-size: 1.1rem;">📊 Phasen-Verteilung</h4>
-                        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                            Zeigt die Verteilung der Injects über die verschiedenen Krisenphasen. 
-                            Hilft zu verstehen, wie sich das Szenario entwickelt und welche Phasen am häufigsten vorkommen.
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
                     fig = create_phase_distribution_chart(injects)
                     st.plotly_chart(fig, use_container_width=True)
                 
                 with col_chart2:
-                    st.markdown("""
-                    <div style="margin-bottom: 0.5rem;">
-                        <h4 style="margin: 0; color: var(--text-primary); font-size: 1.1rem;">⏱️ Szenario Timeline</h4>
-                        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                            Visualisiert die zeitliche Abfolge der Injects. Jeder Punkt repräsentiert einen Inject 
-                            mit seiner Phase und kann für Details gehovered werden.
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
                     timeline_fig = create_timeline_chart(injects)
                     st.plotly_chart(timeline_fig, use_container_width=True)
                 
                 # Workflow Timeline
                 if logs or decisions:
                     st.markdown("---")
-                    st.markdown("""
-                    <div style="margin-bottom: 1rem;">
-                        <h3 style="margin: 0; color: var(--text-primary); font-size: 1.5rem;">⏱️ Workflow Timeline</h3>
-                        <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                            Zeigt die zeitliche Abfolge aller Workflow-Operationen und Agent-Entscheidungen. 
-                            Blaue Punkte = Workflow Nodes, grüne Diamanten = Agent-Entscheidungen.
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.subheader("⏱️ Workflow Timeline")
                     workflow_timeline = create_workflow_timeline(logs, decisions)
                     if workflow_timeline:
                         st.plotly_chart(workflow_timeline, use_container_width=True)
@@ -1041,15 +864,6 @@ def main():
                 # Agent-Entscheidungen
                 if decisions:
                     st.markdown("---")
-                    st.markdown("""
-                    <div style="margin-bottom: 1rem;">
-                        <h3 style="margin: 0; color: var(--text-primary); font-size: 1.5rem;">🤖 Agent-Entscheidungen</h3>
-                        <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                            Analysiert die Entscheidungen der verschiedenen Agenten (Manager, Action Selection, Critic) 
-                            während der Szenario-Generierung. Zeigt, welche Agenten am aktivsten waren.
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
                     col_dec1, col_dec2 = st.columns(2)
                     
                     with col_dec1:
@@ -1058,14 +872,7 @@ def main():
                             st.plotly_chart(decision_chart, use_container_width=True)
                     
                     with col_dec2:
-                        st.markdown("""
-                        <div style="margin-bottom: 1rem;">
-                            <h4 style="margin: 0; color: var(--text-primary); font-size: 1.1rem;">Letzte Entscheidungen</h4>
-                            <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                                Die 5 zuletzt getroffenen Entscheidungen der Agenten mit ihren Begründungen.
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.subheader("🤖 Agent-Entscheidungen")
                         for i, dec in enumerate(decisions[-5:], 1):  # Letzte 5
                             agent = dec.get("agent", "Unknown")
                             decision_type = dec.get("decision_type", "Unknown")
@@ -1084,15 +891,7 @@ def main():
                 
                 # Phase-Übergänge analysieren
                 st.markdown("---")
-                st.markdown("""
-                <div style="margin-bottom: 1rem;">
-                    <h3 style="margin: 0; color: var(--text-primary); font-size: 1.5rem;">🔄 Phasen-Übergänge</h3>
-                    <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                        Zeigt alle Übergänge zwischen verschiedenen Krisenphasen im Szenario. 
-                        Hilft zu verstehen, wie sich die Krise entwickelt und welche Injects Phasenwechsel auslösen.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.subheader("🔄 Phasen-Übergänge")
                 phase_transitions = []
                 prev_phase = None
                 for inj in injects:
@@ -1174,68 +973,27 @@ def main():
                 st.markdown("<br>", unsafe_allow_html=True)
                 
                 # Export-Buttons
-                st.markdown("**📥 Export-Optionen:**")
-                col_exp1, col_exp2, col_exp3, col_exp4 = st.columns(4)
+                col_exp1, col_exp2 = st.columns(2)
                 
                 with col_exp1:
                     csv_data = export_to_csv(filtered_injects)
                     st.download_button(
-                        label="📄 CSV",
+                        label="📥 CSV Export",
                         data=csv_data,
                         file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         mime="text/csv",
-                        use_container_width=True,
-                        help="Export als CSV-Datei"
+                        use_container_width=True
                     )
                 
                 with col_exp2:
                     json_data = export_to_json(filtered_injects)
                     st.download_button(
-                        label="📋 JSON",
+                        label="📥 JSON Export",
                         data=json_data,
                         file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                         mime="application/json",
-                        use_container_width=True,
-                        help="Export als JSON-Datei"
+                        use_container_width=True
                     )
-                
-                with col_exp3:
-                    try:
-                        excel_data = export_to_excel(filtered_injects)
-                        st.download_button(
-                            label="📊 Excel",
-                            data=excel_data,
-                            file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            use_container_width=True,
-                            help="Export als Excel-Datei (.xlsx)"
-                        )
-                    except ImportError:
-                        st.error("Excel Export benötigt openpyxl. Installiere mit: pip install openpyxl")
-                    except Exception as e:
-                        st.error(f"Excel Export Fehler: {e}")
-                
-                with col_exp4:
-                    try:
-                        msel_data = export_to_msel(filtered_injects)
-                        st.download_button(
-                            label="📋 MSEL",
-                            data=msel_data,
-                            file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.msel",
-                            mime="text/plain",
-                            use_container_width=True,
-                            help="Export im MSEL-Format (Master Scenario Event List)"
-                        )
-                    except Exception as e:
-                        st.error(f"MSEL Export Fehler: {e}")
-                
-                # JSON Vorschau
-                with st.expander("📄 JSON Vorschau (erste 3 Injects)", expanded=False):
-                    preview_injects = filtered_injects[:3] if len(filtered_injects) > 3 else filtered_injects
-                    preview_json = export_to_json(preview_injects)
-                    st.code(preview_json, language="json")
-                    if len(filtered_injects) > 3:
-                        st.caption(f"⚠️ Nur die ersten 3 von {len(filtered_injects)} Injects werden angezeigt. Für alle Injects nutze den JSON Export-Button.")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 
@@ -1279,15 +1037,7 @@ def main():
             
             if injects:
                 # Assets-Übersicht
-                st.markdown("""
-                <div style="margin-bottom: 1rem;">
-                    <h3 style="margin: 0; color: var(--text-primary); font-size: 1.5rem;">🎯 Betroffene Assets</h3>
-                    <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                        Analysiert, welche Assets (Server, Systeme, Anwendungen) im Szenario betroffen sind 
-                        und wie häufig sie in Injects vorkommen. Assets mit höherer Anzahl sind kritischer.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.subheader("🎯 Betroffene Assets")
                 all_assets = set()
                 asset_impact_count = {}
                 for inj in injects:
@@ -1328,15 +1078,7 @@ def main():
                 
                 # MITRE TTP Analyse
                 st.markdown("---")
-                st.markdown("""
-                <div style="margin-bottom: 1rem;">
-                    <h3 style="margin: 0; color: var(--text-primary); font-size: 1.5rem;">🔍 MITRE ATT&CK TTP Analyse</h3>
-                    <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
-                        Zeigt alle verwendeten MITRE ATT&CK Taktiken, Techniken und Prozeduren (TTPs) im Szenario. 
-                        Häufig verwendete TTPs deuten auf wiederkehrende Angriffsmuster hin.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.subheader("🔍 MITRE ATT&CK TTP Analyse")
                 mitre_counts = {}
                 for inj in injects:
                     mitre_id = inj.technical_metadata.mitre_id
@@ -1350,7 +1092,6 @@ def main():
                     }).sort_values("Verwendungen", ascending=False)
                     
                     st.dataframe(mitre_df, use_container_width=True, hide_index=True)
-                    st.caption("💡 Tipp: Höhere Verwendungszahlen zeigen wiederkehrende Angriffsmuster im Szenario.")
                 else:
                     st.info("Keine MITRE IDs verfügbar")
             else:

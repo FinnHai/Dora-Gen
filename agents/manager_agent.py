@@ -113,15 +113,36 @@ Antworte im JSON-Format:
         
         chain = prompt | self.llm
         
+        # Retry-Logik für LLM-Call
+        from utils.retry_handler import safe_llm_call
+        
         try:
-            response = chain.invoke({
-                "scenario_type": scenario_type.value,
-                "current_phase": current_phase.value,
-                "inject_count": inject_count,
-                "next_phases": next_phases_str,
-                "suggested_phase": suggested_phase.value,
-                "system_state": system_state_str
-            })
+            def _invoke_chain():
+                return chain.invoke({
+                    "scenario_type": scenario_type.value,
+                    "current_phase": current_phase.value,
+                    "inject_count": inject_count,
+                    "next_phases": next_phases_str,
+                    "suggested_phase": suggested_phase.value,
+                    "system_state": system_state_str
+                })
+            
+            response = safe_llm_call(
+                _invoke_chain,
+                max_attempts=3,
+                default_return=None
+            )
+            
+            if response is None:
+                # Fallback: Verwende vorgeschlagene Phase
+                return {
+                    "next_phase": suggested_phase,
+                    "narrative": f"Automatischer Übergang zur Phase {suggested_phase.value} (LLM-Call fehlgeschlagen)",
+                    "key_events": [],
+                    "affected_assets": [],
+                    "business_impact": "",
+                    "error": "LLM-Call fehlgeschlagen nach mehreren Versuchen"
+                }
             
             # Parse JSON aus Response (einfache Implementierung)
             # In Produktion sollte hier ein robusterer Parser verwendet werden
