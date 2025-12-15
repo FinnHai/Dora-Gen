@@ -55,4 +55,8 @@ class WorkflowState(TypedDict):
     # Metadaten
     start_time: datetime
     metadata: Dict[str, Any]
+    
+    # Workflow-Logs für Dashboard
+    workflow_logs: List[Dict[str, Any]]  # Logs von jedem Node
+    agent_decisions: List[Dict[str, Any]]  # Entscheidungen der Agenten
 

@@ -112,26 +112,68 @@ class ScenarioWorkflow:
         """Node: State Check - Abfrage des aktuellen Systemzustands aus Neo4j."""
         print(f"🔍 [State Check] Iteration {state['iteration']}")
         
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "node": "State Check",
+            "iteration": state['iteration'],
+            "action": "Systemzustand abfragen",
+            "details": {}
+        }
+        
         try:
             # Hole aktuellen Systemzustand
             entities = self.neo4j_client.get_current_state()
+            
+            log_entry["details"] = {
+                "entities_found": len(entities),
+                "status": "success"
+            }
+            
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
             
             return {
                 "system_state": {
                     "entities": entities,
                     "timestamp": datetime.now().isoformat()
-                }
+                },
+                "workflow_logs": logs
             }
         except Exception as e:
             print(f"⚠️  Fehler bei State Check: {e}")
+            log_entry["details"] = {"error": str(e), "status": "error"}
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
                 "system_state": {"entities": [], "error": str(e)},
-                "errors": state.get("errors", []) + [f"State Check Fehler: {e}"]
+                "errors": state.get("errors", []) + [f"State Check Fehler: {e}"],
+                "workflow_logs": logs
             }
     
     def _manager_node(self, state: WorkflowState) -> Dict[str, Any]:
         """Node: Manager Agent - Storyline-Planung."""
         print(f"📋 [Manager] Erstelle Storyline-Plan...")
+        
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "node": "Manager Agent",
+            "iteration": state['iteration'],
+            "action": "Storyline-Plan erstellen",
+            "details": {}
+        }
+        
+        decision_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "agent": "Manager",
+            "iteration": state['iteration'],
+            "decision_type": "Phase Transition",
+            "input": {
+                "current_phase": state["current_phase"].value,
+                "inject_count": len(state["injects"])
+            },
+            "output": {}
+        }
         
         try:
             plan = self.manager_agent.create_storyline(
@@ -144,20 +186,51 @@ class ScenarioWorkflow:
             # Aktualisiere Phase wenn nötig
             next_phase = plan.get("next_phase", state["current_phase"])
             
+            log_entry["details"] = {
+                "next_phase": next_phase.value,
+                "narrative": plan.get("narrative", "")[:100] + "..." if plan.get("narrative") else "",
+                "status": "success"
+            }
+            
+            decision_entry["output"] = {
+                "selected_phase": next_phase.value,
+                "reasoning": plan.get("narrative", "")[:200] if plan.get("narrative") else "Automatische Phasen-Übergang"
+            }
+            
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            decisions = state.get("agent_decisions", [])
+            decisions.append(decision_entry)
+            
             return {
                 "manager_plan": plan,
-                "current_phase": next_phase
+                "current_phase": next_phase,
+                "workflow_logs": logs,
+                "agent_decisions": decisions
             }
         except Exception as e:
             print(f"⚠️  Fehler bei Manager: {e}")
+            log_entry["details"] = {"error": str(e), "status": "error"}
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
                 "manager_plan": {"error": str(e)},
-                "errors": state.get("errors", []) + [f"Manager Fehler: {e}"]
+                "errors": state.get("errors", []) + [f"Manager Fehler: {e}"],
+                "workflow_logs": logs
             }
     
     def _intel_node(self, state: WorkflowState) -> Dict[str, Any]:
         """Node: Intel Agent - TTP-Abfrage."""
         print(f"🔎 [Intel] Hole relevante TTPs...")
+        
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "node": "Intel Agent",
+            "iteration": state['iteration'],
+            "action": "TTPs abfragen",
+            "details": {}
+        }
         
         try:
             ttps = self.intel_agent.get_relevant_ttps(
@@ -165,68 +238,127 @@ class ScenarioWorkflow:
                 limit=5
             )
             
+            log_entry["details"] = {
+                "ttps_found": len(ttps),
+                "phase": state["current_phase"].value,
+                "status": "success"
+            }
+            
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
-                "available_ttps": ttps
+                "available_ttps": ttps,
+                "workflow_logs": logs
             }
         except Exception as e:
             print(f"⚠️  Fehler bei Intel: {e}")
+            log_entry["details"] = {"error": str(e), "status": "error"}
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
                 "available_ttps": [],
-                "errors": state.get("errors", []) + [f"Intel Fehler: {e}"]
+                "errors": state.get("errors", []) + [f"Intel Fehler: {e}"],
+                "workflow_logs": logs
             }
     
     def _action_selection_node(self, state: WorkflowState) -> Dict[str, Any]:
         """Node: Action Selection - Auswahl des nächsten logischen Angriffsschritts."""
         print(f"🎯 [Action Selection] Wähle nächste Aktion...")
         
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "node": "Action Selection",
+            "iteration": state['iteration'],
+            "action": "TTP auswählen",
+            "details": {}
+        }
+        
+        decision_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "agent": "Action Selection",
+            "iteration": state['iteration'],
+            "decision_type": "TTP Selection",
+            "input": {
+                "available_ttps": len(state.get("available_ttps", [])),
+                "phase": state["current_phase"].value
+            },
+            "output": {}
+        }
+        
         try:
             available_ttps = state.get("available_ttps", [])
             manager_plan = state.get("manager_plan", {})
             
             if not available_ttps:
-                # Fallback: Verwende ersten verfügbaren TTP
                 selected_ttp = {
                     "technique_id": "T1110",
                     "name": "Brute Force",
                     "mitre_id": "T1110"
                 }
             else:
-                # Wähle TTP basierend auf Manager-Plan
-                # Einfache Heuristik: Erster TTP, der zu den betroffenen Assets passt
                 selected_ttp = available_ttps[0]
+            
+            log_entry["details"] = {
+                "selected_ttp": selected_ttp.get("mitre_id", "N/A"),
+                "ttp_name": selected_ttp.get("name", "Unknown"),
+                "status": "success"
+            }
+            
+            decision_entry["output"] = {
+                "selected_ttp": selected_ttp.get("mitre_id", "N/A"),
+                "reasoning": f"Gewählt basierend auf Phase {state['current_phase'].value}"
+            }
+            
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            decisions = state.get("agent_decisions", [])
+            decisions.append(decision_entry)
             
             return {
                 "selected_action": {
                     "ttp": selected_ttp,
                     "reasoning": f"Gewählt basierend auf Phase {state['current_phase'].value}"
-                }
+                },
+                "workflow_logs": logs,
+                "agent_decisions": decisions
             }
         except Exception as e:
             print(f"⚠️  Fehler bei Action Selection: {e}")
+            log_entry["details"] = {"error": str(e), "status": "error"}
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
                 "selected_action": {"error": str(e)},
-                "errors": state.get("errors", []) + [f"Action Selection Fehler: {e}"]
+                "errors": state.get("errors", []) + [f"Action Selection Fehler: {e}"],
+                "workflow_logs": logs
             }
     
     def _generator_node(self, state: WorkflowState) -> Dict[str, Any]:
         """Node: Generator Agent - Drafting."""
         print(f"✍️  [Generator] Erstelle Inject...")
         
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "node": "Generator Agent",
+            "iteration": state['iteration'],
+            "action": "Inject generieren",
+            "details": {}
+        }
+        
         try:
-            # Berechne nächste Inject-ID und Zeitversatz
             inject_count = len(state["injects"])
             inject_id = f"INJ-{inject_count + 1:03d}"
             
-            # Zeitversatz: +30 Minuten pro Inject
             hours = (inject_count + 1) * 0.5
             time_offset = f"T+{int(hours):02d}:{int((hours % 1) * 60):02d}"
             
-            # Hole benötigte Daten
             manager_plan = state.get("manager_plan", {})
             selected_action = state.get("selected_action", {})
             selected_ttp = selected_action.get("ttp", {})
             
-            # Generiere Inject
             inject = self.generator_agent.generate_inject(
                 scenario_type=state["scenario_type"],
                 phase=state["current_phase"],
@@ -238,24 +370,61 @@ class ScenarioWorkflow:
                 previous_injects=state["injects"]
             )
             
+            log_entry["details"] = {
+                "inject_id": inject_id,
+                "phase": inject.phase.value,
+                "mitre_id": inject.technical_metadata.mitre_id or "N/A",
+                "status": "success"
+            }
+            
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
-                "draft_inject": inject
+                "draft_inject": inject,
+                "workflow_logs": logs
             }
         except Exception as e:
             print(f"⚠️  Fehler bei Generator: {e}")
+            log_entry["details"] = {"error": str(e), "status": "error"}
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
                 "draft_inject": None,
-                "errors": state.get("errors", []) + [f"Generator Fehler: {e}"]
+                "errors": state.get("errors", []) + [f"Generator Fehler: {e}"],
+                "workflow_logs": logs
             }
     
     def _critic_node(self, state: WorkflowState) -> Dict[str, Any]:
         """Node: Critic Agent - Validation."""
         print(f"🔍 [Critic] Validiere Inject...")
         
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "node": "Critic Agent",
+            "iteration": state['iteration'],
+            "action": "Inject validieren",
+            "details": {}
+        }
+        
+        decision_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "agent": "Critic",
+            "iteration": state['iteration'],
+            "decision_type": "Validation",
+            "input": {},
+            "output": {}
+        }
+        
         try:
             draft_inject = state.get("draft_inject")
             
             if not draft_inject:
+                log_entry["details"] = {"error": "Kein Draft-Inject", "status": "error"}
+                logs = state.get("workflow_logs", [])
+                logs.append(log_entry)
+                
                 return {
                     "validation_result": ValidationResult(
                         is_valid=False,
@@ -263,10 +432,10 @@ class ScenarioWorkflow:
                         dora_compliance=False,
                         causal_validity=False,
                         errors=["Kein Draft-Inject vorhanden"]
-                    )
+                    ),
+                    "workflow_logs": logs
                 }
             
-            # Validiere
             validation = self.critic_agent.validate_inject(
                 inject=draft_inject,
                 previous_injects=state["injects"],
@@ -274,16 +443,43 @@ class ScenarioWorkflow:
                 system_state=state["system_state"]
             )
             
+            log_entry["details"] = {
+                "inject_id": draft_inject.inject_id,
+                "is_valid": validation.is_valid,
+                "logical_consistency": validation.logical_consistency,
+                "dora_compliance": validation.dora_compliance,
+                "causal_validity": validation.causal_validity,
+                "status": "success"
+            }
+            
+            decision_entry["input"] = {"inject_id": draft_inject.inject_id}
+            decision_entry["output"] = {
+                "is_valid": validation.is_valid,
+                "errors": validation.errors,
+                "warnings": validation.warnings
+            }
+            
             if validation.is_valid:
                 print(f"✅ Inject validiert: {draft_inject.inject_id}")
             else:
                 print(f"❌ Inject nicht valide: {validation.errors}")
             
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            decisions = state.get("agent_decisions", [])
+            decisions.append(decision_entry)
+            
             return {
-                "validation_result": validation
+                "validation_result": validation,
+                "workflow_logs": logs,
+                "agent_decisions": decisions
             }
         except Exception as e:
             print(f"⚠️  Fehler bei Critic: {e}")
+            log_entry["details"] = {"error": str(e), "status": "error"}
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
                 "validation_result": ValidationResult(
                     is_valid=False,
@@ -291,12 +487,21 @@ class ScenarioWorkflow:
                     dora_compliance=False,
                     causal_validity=False,
                     errors=[f"Critic Fehler: {e}"]
-                )
+                ),
+                "workflow_logs": logs
             }
     
     def _state_update_node(self, state: WorkflowState) -> Dict[str, Any]:
         """Node: State Update - Schreiben der Auswirkungen in Neo4j."""
         print(f"💾 [State Update] Aktualisiere Systemzustand...")
+        
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "node": "State Update",
+            "iteration": state['iteration'],
+            "action": "Systemzustand aktualisieren",
+            "details": {}
+        }
         
         try:
             draft_inject = state.get("draft_inject")
@@ -306,6 +511,9 @@ class ScenarioWorkflow:
             
             # Füge Inject zu Liste hinzu
             new_injects = state["injects"] + [draft_inject]
+            
+            updated_assets = []
+            second_order_effects = []
             
             # Update Neo4j: Status der betroffenen Assets
             for asset_id in draft_inject.technical_metadata.affected_assets:
@@ -321,6 +529,7 @@ class ScenarioWorkflow:
                         new_status=new_status,
                         inject_id=draft_inject.inject_id
                     )
+                    updated_assets.append({"asset": asset_id, "status": new_status})
                     
                     # Second-Order Effects
                     affected = self.neo4j_client.get_affected_entities(asset_id)
@@ -330,17 +539,34 @@ class ScenarioWorkflow:
                             new_status="degraded",
                             inject_id=draft_inject.inject_id
                         )
+                        second_order_effects.append(affected_id)
                 except Exception as e:
                     print(f"⚠️  Fehler beim Update von {asset_id}: {e}")
             
+            log_entry["details"] = {
+                "inject_id": draft_inject.inject_id,
+                "assets_updated": len(updated_assets),
+                "second_order_effects": len(second_order_effects),
+                "status": "success"
+            }
+            
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
                 "injects": new_injects,
-                "iteration": state["iteration"] + 1
+                "iteration": state["iteration"] + 1,
+                "workflow_logs": logs
             }
         except Exception as e:
             print(f"⚠️  Fehler bei State Update: {e}")
+            log_entry["details"] = {"error": str(e), "status": "error"}
+            logs = state.get("workflow_logs", [])
+            logs.append(log_entry)
+            
             return {
-                "errors": state.get("errors", []) + [f"State Update Fehler: {e}"]
+                "errors": state.get("errors", []) + [f"State Update Fehler: {e}"],
+                "workflow_logs": logs
             }
     
     def _should_refine(self, state: WorkflowState) -> str:
@@ -439,7 +665,9 @@ class ScenarioWorkflow:
             "errors": [],
             "warnings": [],
             "start_time": datetime.now(),
-            "metadata": {}
+            "metadata": {},
+            "workflow_logs": [],
+            "agent_decisions": []
         }
         
         print(f"🚀 Starte Szenario-Generierung: {scenario_id}")
