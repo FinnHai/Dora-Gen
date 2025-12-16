@@ -8,9 +8,10 @@ State-Abfragen und Updates bereit.
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from neo4j import GraphDatabase
-from state_models import KnowledgeGraphEntity, GraphStateUpdate, CrisisPhase
+from state_models import KnowledgeGraphEntity, GraphStateUpdate, CrisisPhase, ScenarioState, Inject
 import os
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 
@@ -176,32 +177,197 @@ class Neo4jClient:
             session.run(query, **params)
             return True
 
-    def get_affected_entities(self, entity_id: str) -> List[str]:
+    def get_affected_entities(self, entity_id: str, max_depth: int = 3) -> List[str]:
         """
         Ruft alle Entitäten ab, die von einer Statusänderung betroffen sind
-        (Second-Order Effects).
+        (Second-Order Effects) - erweiterte Version mit rekursiver Analyse.
         
         Beispiel: Wenn Server A offline geht, sind alle Applikationen betroffen,
-        die auf Server A laufen.
+        die auf Server A laufen, und wiederum alle Services, die diese Applikationen nutzen.
         
         Args:
             entity_id: ID der Entität, deren Auswirkungen geprüft werden sollen
+            max_depth: Maximale Tiefe der rekursiven Abhängigkeitsanalyse (Standard: 3)
         
         Returns:
-            Liste von Entity-IDs, die indirekt betroffen sind
+            Liste von Entity-IDs, die indirekt betroffen sind (inkl. Tiefe)
         """
         if not self.driver:
             raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
 
         with self.driver.session(database=self.database) as session:
-            # Beispiel: Finde alle Applikationen, die auf einem Server laufen
+            # Rekursive Abhängigkeitsanalyse mit mehreren Relationship-Typen
             query = """
-            MATCH (source {id: $entity_id})-[r:RUNS_ON|DEPENDS_ON|USES]->(target)
-            RETURN collect(target.id) as affected_ids
-            """
+            MATCH path = (source {id: $entity_id})-[*1..%d]->(target)
+            WHERE ALL(r in relationships(path) WHERE type(r) IN ['RUNS_ON', 'DEPENDS_ON', 'USES', 'CONNECTS_TO', 'REQUIRES'])
+            RETURN DISTINCT target.id as affected_id, length(path) as depth
+            ORDER BY depth, target.id
+            """ % max_depth
+            
             result = session.run(query, entity_id=entity_id)
-            record = result.single()
-            return record["affected_ids"] if record else []
+            affected_ids = []
+            for record in result:
+                affected_ids.append(record["affected_id"])
+            
+            return affected_ids
+    
+    def calculate_cascading_impact(
+        self,
+        entity_id: str,
+        new_status: str,
+        max_depth: int = 3
+    ) -> Dict[str, Any]:
+        """
+        Berechnet kaskadierende Auswirkungen einer Statusänderung.
+        
+        Args:
+            entity_id: ID der betroffenen Entität
+            new_status: Neuer Status (z.B. 'offline', 'compromised', 'encrypted')
+            max_depth: Maximale Tiefe der Analyse
+        
+        Returns:
+            Dictionary mit:
+            - affected_entities: Liste betroffener Entitäten mit Details
+            - critical_paths: Kritische Pfade der Abhängigkeiten
+            - estimated_recovery_time: Geschätzte Recovery-Zeit
+            - impact_severity: Gesamt-Impact-Schweregrad
+        """
+        if not self.driver:
+            raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
+        
+        with self.driver.session(database=self.database) as session:
+            # Finde alle betroffenen Entitäten mit Details
+            query = """
+            MATCH path = (source {id: $entity_id})-[*1..%d]->(target)
+            WHERE ALL(r in relationships(path) WHERE type(r) IN ['RUNS_ON', 'DEPENDS_ON', 'USES', 'CONNECTS_TO', 'REQUIRES'])
+            WITH target, length(path) as depth, path
+            RETURN DISTINCT 
+                target.id as entity_id,
+                target.name as entity_name,
+                target.type as entity_type,
+                target.status as current_status,
+                depth,
+                [r in relationships(path) | type(r)] as relationship_chain
+            ORDER BY depth, target.type
+            """ % max_depth
+            
+            result = session.run(query, entity_id=entity_id)
+            
+            affected_entities = []
+            critical_paths = []
+            max_depth_found = 0
+            
+            for record in result:
+                entity_info = {
+                    "entity_id": record["entity_id"],
+                    "entity_name": record["entity_name"],
+                    "entity_type": record["entity_type"],
+                    "current_status": record["current_status"],
+                    "depth": record["depth"],
+                    "relationship_chain": record["relationship_chain"]
+                }
+                affected_entities.append(entity_info)
+                max_depth_found = max(max_depth_found, record["depth"])
+                
+                # Identifiziere kritische Pfade (lange Abhängigkeitsketten)
+                if record["depth"] >= 2:
+                    critical_paths.append({
+                        "path_length": record["depth"],
+                        "entity_id": record["entity_id"],
+                        "entity_type": record["entity_type"]
+                    })
+            
+            # Bestimme Impact-Schweregrad basierend auf Anzahl und Tiefe
+            impact_severity = self._calculate_impact_severity(
+                len(affected_entities),
+                max_depth_found,
+                new_status
+            )
+            
+            # Schätze Recovery-Zeit basierend auf Status und Anzahl betroffener Systeme
+            estimated_recovery_time = self._estimate_recovery_time(
+                new_status,
+                len(affected_entities),
+                max_depth_found
+            )
+            
+            return {
+                "affected_entities": affected_entities,
+                "critical_paths": critical_paths,
+                "estimated_recovery_time": estimated_recovery_time,
+                "impact_severity": impact_severity,
+                "total_affected": len(affected_entities),
+                "max_depth": max_depth_found
+            }
+    
+    def _calculate_impact_severity(
+        self,
+        num_affected: int,
+        max_depth: int,
+        status: str
+    ) -> str:
+        """Berechnet den Gesamt-Impact-Schweregrad."""
+        # Basis-Score basierend auf Anzahl
+        base_score = min(num_affected * 10, 100)
+        
+        # Tiefe-Multiplikator
+        depth_multiplier = 1 + (max_depth * 0.2)
+        
+        # Status-Multiplikator
+        status_multipliers = {
+            "compromised": 1.5,
+            "encrypted": 2.0,
+            "offline": 1.3,
+            "degraded": 1.1,
+            "suspicious": 1.0
+        }
+        status_mult = status_multipliers.get(status, 1.0)
+        
+        final_score = base_score * depth_multiplier * status_mult
+        
+        if final_score >= 80:
+            return "Critical"
+        elif final_score >= 50:
+            return "High"
+        elif final_score >= 25:
+            return "Medium"
+        else:
+            return "Low"
+    
+    def _estimate_recovery_time(
+        self,
+        status: str,
+        num_affected: int,
+        max_depth: int
+    ) -> str:
+        """Schätzt die Recovery-Zeit basierend auf Status und Auswirkungen."""
+        # Basis-Recovery-Zeiten (in Stunden)
+        base_times = {
+            "compromised": 24,
+            "encrypted": 48,
+            "offline": 8,
+            "degraded": 4,
+            "suspicious": 2
+        }
+        
+        base_time = base_times.get(status, 12)
+        
+        # Multipliziere mit Anzahl betroffener Systeme (logarithmisch)
+        import math
+        time_multiplier = 1 + math.log10(max(num_affected, 1)) * 0.5
+        
+        # Tiefe erhöht Recovery-Zeit
+        depth_multiplier = 1 + (max_depth * 0.1)
+        
+        estimated_hours = base_time * time_multiplier * depth_multiplier
+        
+        if estimated_hours < 1:
+            return f"{int(estimated_hours * 60)} Minuten"
+        elif estimated_hours < 24:
+            return f"{int(estimated_hours)} Stunden"
+        else:
+            days = estimated_hours / 24
+            return f"{days:.1f} Tage"
 
     def create_entity(self, entity: KnowledgeGraphEntity) -> bool:
         """
@@ -237,16 +403,36 @@ class Neo4jClient:
             )
             return True
 
-    def initialize_base_infrastructure(self):
+    def initialize_base_infrastructure(self, template_name: Optional[str] = None):
         """
         Initialisiert eine Basis-Infrastruktur im Knowledge Graph.
         
         Erstellt beispielhafte Server, Applikationen und Abteilungen
-        für Testzwecke.
+        für Testzwecke. Kann auch ein Infrastructure Template verwenden.
+        
+        Args:
+            template_name: Optional - Name des Templates ('standard_bank', 'large_bank', 'minimal_bank')
+                          Wenn None, wird die einfache Basis-Infrastruktur verwendet
         """
         if not self.driver:
             raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
+        
+        # Verwende Template falls angegeben
+        if template_name:
+            try:
+                from infrastructure_templates import get_available_templates, load_template_to_neo4j
+                templates = get_available_templates()
+                if template_name in templates:
+                    template = templates[template_name]
+                    return load_template_to_neo4j(template, self, clear_existing=True)
+                else:
+                    print(f"⚠️  Template '{template_name}' nicht gefunden. Verwende Basis-Infrastruktur.")
+            except ImportError:
+                print("⚠️  Infrastructure Templates nicht verfügbar. Verwende Basis-Infrastruktur.")
+            except Exception as e:
+                print(f"⚠️  Fehler beim Laden des Templates: {e}. Verwende Basis-Infrastruktur.")
 
+        # Fallback: Einfache Basis-Infrastruktur
         base_entities = [
             {
                 "id": "SRV-001",
@@ -326,4 +512,233 @@ class Neo4jClient:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context Manager Support."""
         self.close()
+    
+    def save_scenario(self, scenario_state: ScenarioState, user: Optional[str] = None) -> str:
+        """
+        Speichert ein vollständiges Szenario in Neo4j.
+        
+        Args:
+            scenario_state: ScenarioState Objekt mit allen Injects
+            user: Optional - Benutzername, der das Szenario erstellt hat
+        
+        Returns:
+            Scenario ID (die bereits vorhandene oder neu erstellte)
+        """
+        if not self.driver:
+            raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
+        
+        with self.driver.session(database=self.database) as session:
+            # Erstelle oder aktualisiere Scenario Node
+            scenario_query = """
+            MERGE (s:Scenario {id: $scenario_id})
+            SET s.type = $scenario_type,
+                s.current_phase = $current_phase,
+                s.start_time = datetime($start_time),
+                s.created_at = datetime(),
+                s.user = $user,
+                s.inject_count = $inject_count,
+                s.metadata = $metadata
+            RETURN s.id as scenario_id
+            """
+            
+            start_time_str = scenario_state.start_time.isoformat() if isinstance(scenario_state.start_time, datetime) else scenario_state.start_time
+            
+            result = session.run(
+                scenario_query,
+                scenario_id=scenario_state.scenario_id,
+                scenario_type=scenario_state.scenario_type.value if hasattr(scenario_state.scenario_type, 'value') else str(scenario_state.scenario_type),
+                current_phase=scenario_state.current_phase.value if hasattr(scenario_state.current_phase, 'value') else str(scenario_state.current_phase),
+                start_time=start_time_str,
+                user=user or "system",
+                inject_count=len(scenario_state.injects),
+                metadata=json.dumps(scenario_state.metadata) if scenario_state.metadata else "{}"
+            )
+            
+            scenario_id = result.single()["scenario_id"]
+            
+            # Erstelle Inject Nodes und verknüpfe sie mit Scenario
+            for inject in scenario_state.injects:
+                # Erstelle Inject Node
+                inject_query = """
+                MERGE (i:Inject {id: $inject_id})
+                SET i.time_offset = $time_offset,
+                    i.phase = $phase,
+                    i.source = $source,
+                    i.target = $target,
+                    i.modality = $modality,
+                    i.content = $content,
+                    i.mitre_id = $mitre_id,
+                    i.dora_compliance_tag = $dora_tag,
+                    i.business_impact = $business_impact,
+                    i.severity = $severity,
+                    i.created_at = datetime()
+                WITH i
+                MATCH (s:Scenario {id: $scenario_id})
+                MERGE (s)-[:CONTAINS]->(i)
+                RETURN i.id as inject_id
+                """
+                
+                session.run(
+                    inject_query,
+                    inject_id=inject.inject_id,
+                    time_offset=inject.time_offset,
+                    phase=inject.phase.value if hasattr(inject.phase, 'value') else str(inject.phase),
+                    source=inject.source,
+                    target=inject.target,
+                    modality=inject.modality.value if hasattr(inject.modality, 'value') else str(inject.modality),
+                    content=inject.content,
+                    mitre_id=inject.technical_metadata.mitre_id or "",
+                    dora_tag=inject.dora_compliance_tag or "",
+                    business_impact=inject.business_impact or "",
+                    severity=inject.technical_metadata.severity or "",
+                    scenario_id=scenario_id
+                )
+                
+                # Verknüpfe Inject mit betroffenen Entities
+                for asset_id in inject.technical_metadata.affected_assets:
+                    entity_link_query = """
+                    MATCH (i:Inject {id: $inject_id})
+                    MATCH (e:Entity {id: $asset_id})
+                    MERGE (i)-[:AFFECTS]->(e)
+                    """
+                    session.run(entity_link_query, inject_id=inject.inject_id, asset_id=asset_id)
+            
+            print(f"✅ Szenario {scenario_id} in Neo4j gespeichert ({len(scenario_state.injects)} Injects)")
+            return scenario_id
+    
+    def get_scenario(self, scenario_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Ruft ein gespeichertes Szenario aus Neo4j ab.
+        
+        Args:
+            scenario_id: ID des Szenarios
+        
+        Returns:
+            Dictionary mit Szenario-Daten oder None wenn nicht gefunden
+        """
+        if not self.driver:
+            raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
+        
+        with self.driver.session(database=self.database) as session:
+            query = """
+            MATCH (s:Scenario {id: $scenario_id})
+            OPTIONAL MATCH (s)-[:CONTAINS]->(i:Inject)
+            OPTIONAL MATCH (i)-[:AFFECTS]->(e:Entity)
+            RETURN s,
+                   collect(DISTINCT i) as injects,
+                   collect(DISTINCT e.id) as affected_entities
+            """
+            
+            result = session.run(query, scenario_id=scenario_id)
+            record = result.single()
+            
+            if not record:
+                return None
+            
+            scenario_node = dict(record["s"])
+            injects = []
+            
+            for inject_node in record["injects"]:
+                if inject_node:
+                    injects.append(dict(inject_node))
+            
+            return {
+                "scenario_id": scenario_node.get("id"),
+                "scenario_type": scenario_node.get("type"),
+                "current_phase": scenario_node.get("current_phase"),
+                "start_time": scenario_node.get("start_time"),
+                "user": scenario_node.get("user"),
+                "inject_count": scenario_node.get("inject_count", 0),
+                "metadata": json.loads(scenario_node.get("metadata", "{}")),
+                "injects": injects,
+                "affected_entities": list(set(record["affected_entities"])) if record["affected_entities"] else []
+            }
+    
+    def list_scenarios(
+        self,
+        limit: int = 50,
+        user: Optional[str] = None,
+        scenario_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Listet alle gespeicherten Szenarien auf.
+        
+        Args:
+            limit: Maximale Anzahl zurückzugebender Szenarien
+            user: Optional - Filter nach Benutzer
+            scenario_type: Optional - Filter nach Szenario-Typ
+        
+        Returns:
+            Liste von Szenario-Dictionaries
+        """
+        if not self.driver:
+            raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
+        
+        with self.driver.session(database=self.database) as session:
+            query = """
+            MATCH (s:Scenario)
+            WHERE ($user IS NULL OR s.user = $user)
+            AND ($scenario_type IS NULL OR s.type = $scenario_type)
+            RETURN s.id as scenario_id,
+                   s.type as scenario_type,
+                   s.current_phase as current_phase,
+                   s.start_time as start_time,
+                   s.created_at as created_at,
+                   s.user as user,
+                   s.inject_count as inject_count
+            ORDER BY s.created_at DESC
+            LIMIT $limit
+            """
+            
+            result = session.run(
+                query,
+                user=user,
+                scenario_type=scenario_type,
+                limit=limit
+            )
+            
+            scenarios = []
+            for record in result:
+                scenarios.append({
+                    "scenario_id": record["scenario_id"],
+                    "scenario_type": record["scenario_type"],
+                    "current_phase": record["current_phase"],
+                    "start_time": record["start_time"],
+                    "created_at": record["created_at"],
+                    "user": record["user"],
+                    "inject_count": record["inject_count"] or 0
+                })
+            
+            return scenarios
+    
+    def delete_scenario(self, scenario_id: str) -> bool:
+        """
+        Löscht ein Szenario aus Neo4j (inklusive aller Injects).
+        
+        Args:
+            scenario_id: ID des zu löschenden Szenarios
+        
+        Returns:
+            True wenn erfolgreich gelöscht
+        """
+        if not self.driver:
+            raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
+        
+        with self.driver.session(database=self.database) as session:
+            query = """
+            MATCH (s:Scenario {id: $scenario_id})
+            OPTIONAL MATCH (s)-[:CONTAINS]->(i:Inject)
+            DETACH DELETE s, i
+            RETURN count(s) as deleted
+            """
+            
+            result = session.run(query, scenario_id=scenario_id)
+            deleted = result.single()["deleted"]
+            
+            if deleted > 0:
+                print(f"✅ Szenario {scenario_id} gelöscht")
+                return True
+            else:
+                print(f"⚠️  Szenario {scenario_id} nicht gefunden")
+                return False
 

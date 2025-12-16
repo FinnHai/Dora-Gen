@@ -32,6 +32,24 @@ class ScenarioType(str, Enum):
     INSIDER_THREAT_DATA_MANIPULATION = "INSIDER_THREAT_DATA_MANIPULATION"
 
 
+class ScenarioEndCondition(str, Enum):
+    """Mögliche End-Bedingungen für ein Szenario."""
+    CONTINUE = "CONTINUE"
+    FATAL = "FATAL"  # Fataler Ausgang - System komplett kompromittiert
+    VICTORY = "VICTORY"  # Sieg - Bedrohung erfolgreich abgewehrt
+    NORMAL_END = "NORMAL_END"  # Normales Ende - Recovery abgeschlossen
+
+
+class UserDecision(BaseModel):
+    """Benutzer-Entscheidung an einem Decision-Point."""
+    decision_id: str = Field(..., description="Eindeutige Decision-ID")
+    timestamp: datetime = Field(default_factory=datetime.now)
+    decision_type: str = Field(..., description="Typ der Entscheidung (z.B. 'response_action', 'resource_allocation')")
+    choice: str = Field(..., description="Gewählte Option")
+    reasoning: Optional[str] = Field(None, description="Begründung der Entscheidung")
+    impact: Optional[Dict[str, Any]] = Field(None, description="Erwartete Auswirkungen der Entscheidung")
+
+
 class InjectModality(str, Enum):
     """Kommunikationsmodalität für Injects."""
     SIEM_ALERT = "SIEM Alert"

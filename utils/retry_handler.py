@@ -91,15 +91,27 @@ def safe_llm_call(
     Returns:
         Ergebnis der Funktion oder default_return bei Fehler
     """
-    @retry_llm_call(max_attempts=max_attempts)
-    def _call():
-        return func(*args, **kwargs)
+    last_exception = None
     
-    try:
-        return _call()
-    except Exception as e:
-        logger.error(f"LLM-Call fehlgeschlagen nach {max_attempts} Versuchen: {e}")
-        return default_return
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return func(*args, **kwargs)
+        except OPENAI_RETRYABLE_ERRORS as e:
+            last_exception = e
+            if attempt < max_attempts:
+                wait_time = min(2.0 ** attempt, 60.0)  # Exponential backoff, max 60s
+                logger.warning(f"LLM-Call Versuch {attempt}/{max_attempts} fehlgeschlagen: {e}. Warte {wait_time:.1f}s...")
+                import time
+                time.sleep(wait_time)
+            else:
+                logger.error(f"LLM-Call fehlgeschlagen nach {max_attempts} Versuchen: {e}")
+        except Exception as e:
+            # Nicht-retryable Fehler
+            logger.error(f"LLM-Call Fehler (nicht retryable): {e}")
+            raise
+    
+    logger.error(f"LLM-Call fehlgeschlagen nach {max_attempts} Versuchen. Letzter Fehler: {last_exception}")
+    return default_return
 
 
 def retry_neo4j_call(

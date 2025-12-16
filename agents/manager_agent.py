@@ -185,18 +185,21 @@ Antworte im JSON-Format:
     
     def _format_system_state(self, system_state: Dict[str, Any]) -> str:
         """Formatiert den Systemzustand für den Prompt."""
-        if not system_state or "entities" not in system_state:
+        if not system_state or not isinstance(system_state, dict):
             return "Keine Systemzustand-Informationen verfügbar"
         
-        entities = system_state.get("entities", [])
-        if not entities:
+        # system_state ist jetzt ein direktes Dictionary: entity_id -> entity_data
+        if not system_state:
             return "Alle Systeme im Normalbetrieb"
         
         lines = ["Aktueller Systemzustand:"]
-        for entity in entities[:10]:  # Limit auf 10 für Prompt-Länge
-            status = entity.get("status", "unknown")
-            name = entity.get("name", entity.get("entity_id", "Unknown"))
-            lines.append(f"- {name}: {status}")
+        for entity_id, entity_data in list(system_state.items())[:10]:  # Limit auf 10 für Prompt-Länge
+            if isinstance(entity_data, dict):
+                status = entity_data.get("status", "unknown")
+                name = entity_data.get("name", entity_id)
+                lines.append(f"- {name} ({entity_id}): {status}")
+            else:
+                lines.append(f"- {entity_id}: {entity_data}")
         
         return "\n".join(lines)
 

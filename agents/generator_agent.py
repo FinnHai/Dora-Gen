@@ -237,15 +237,21 @@ WICHTIG:
     
     def _format_system_state(self, system_state: Dict[str, Any]) -> str:
         """Formatiert den Systemzustand."""
-        if not system_state or "entities" not in system_state:
+        if not system_state or not isinstance(system_state, dict):
             return "Keine Systemzustand-Informationen verfügbar"
         
-        entities = system_state.get("entities", [])
+        # system_state ist jetzt ein direktes Dictionary: entity_id -> entity_data
+        if not system_state:
+            return "Alle Systeme im Normalbetrieb"
+        
         lines = []
-        for entity in entities[:5]:
-            name = entity.get("name", entity.get("entity_id", "Unknown"))
-            status = entity.get("status", "unknown")
-            lines.append(f"- {name}: {status}")
+        for entity_id, entity_data in list(system_state.items())[:5]:
+            if isinstance(entity_data, dict):
+                status = entity_data.get("status", "unknown")
+                name = entity_data.get("name", entity_id)
+                lines.append(f"- {name} ({entity_id}): {status}")
+            else:
+                lines.append(f"- {entity_id}: {entity_data}")
         
         return "\n".join(lines) if lines else "Alle Systeme im Normalbetrieb"
     

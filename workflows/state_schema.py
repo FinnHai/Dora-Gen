@@ -39,7 +39,7 @@ class WorkflowState(TypedDict):
     max_iterations: int  # Maximale Anzahl Injects
     
     # Agenten-Outputs
-    manager_plan: Optional[str]  # Storyline vom Manager Agent
+    manager_plan: Optional[Dict[str, Any]]  # Storyline vom Manager Agent
     selected_action: Optional[Dict[str, Any]]  # Ausgewählte Aktion (MITRE TTP)
     draft_inject: Optional[Inject]  # Roher Inject vom Generator
     validation_result: Optional[ValidationResult]  # Validierung vom Critic
@@ -59,4 +59,10 @@ class WorkflowState(TypedDict):
     # Workflow-Logs für Dashboard
     workflow_logs: List[Dict[str, Any]]  # Logs von jedem Node
     agent_decisions: List[Dict[str, Any]]  # Entscheidungen der Agenten
+    
+    # Interaktive Entscheidungen
+    pending_decision: Optional[Dict[str, Any]]  # Aktuell ausstehende Benutzer-Entscheidung
+    user_decisions: List[Dict[str, Any]]  # Alle getroffenen Benutzer-Entscheidungen
+    end_condition: Optional[str]  # Aktuelle End-Bedingung (FATAL, VICTORY, NORMAL_END, CONTINUE)
+    interactive_mode: bool  # Ob interaktiver Modus aktiviert ist
 

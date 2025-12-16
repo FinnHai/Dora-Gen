@@ -25,12 +25,13 @@ class IntelAgent:
     und stellt relevante TTPs basierend auf der aktuellen Phase bereit.
     """
     
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: Optional[str] = None, auto_populate: bool = True):
         """
         Initialisiert den Intel Agent.
         
         Args:
             db_path: Pfad zur ChromaDB (Standard: aus .env oder ./chroma_db)
+            auto_populate: Wenn True, versucht automatisch TTPs zu laden wenn DB leer ist
         """
         self.db_path = db_path or os.getenv("CHROMA_DB_PATH", "./chroma_db")
         
@@ -44,9 +45,40 @@ class IntelAgent:
         self.collection_name = "mitre_ttps"
         try:
             self.collection = self.client.get_collection(name=self.collection_name)
+            # Prüfe ob Collection leer ist
+            if auto_populate and self.collection.count() == 0:
+                print("⚠️  ChromaDB TTP Collection ist leer. Versuche automatische Population...")
+                self._try_auto_populate()
         except:
             # Collection existiert noch nicht - wird beim ersten Laden erstellt
             self.collection = None
+            if auto_populate:
+                print("⚠️  ChromaDB TTP Collection existiert nicht. Versuche automatische Population...")
+                self._try_auto_populate()
+    
+    def _try_auto_populate(self):
+        """Versucht automatisch TTPs zu laden wenn möglich."""
+        try:
+            # Versuche Script zu importieren und auszuführen
+            import sys
+            from pathlib import Path
+            project_root = Path(__file__).parent.parent
+            scripts_path = project_root / "scripts" / "populate_ttp_database.py"
+            
+            if scripts_path.exists():
+                # Lade TTPs direkt
+                from scripts.populate_ttp_database import fetch_mitre_attack_techniques, _create_basic_ttps
+                
+                techniques = fetch_mitre_attack_techniques()
+                if not techniques:
+                    techniques = _create_basic_ttps()
+                
+                if techniques:
+                    self.initialize_ttp_database(techniques)
+                    print(f"✅ {len(techniques)} TTPs automatisch geladen")
+        except Exception as e:
+            print(f"⚠️  Automatische Population fehlgeschlagen: {e}")
+            print("   Verwende Fallback-TTPs für diese Session")
     
     def get_relevant_ttps(
         self,

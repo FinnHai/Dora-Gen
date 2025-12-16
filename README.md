@@ -138,17 +138,42 @@ python test_workflow.py
 
 ## 📋 Verwendung
 
-### Frontend (Empfohlen)
+### Frontend-Anwendungen
 
-Die einfachste Art, das System zu nutzen, ist über das Streamlit Frontend:
+Das Projekt bietet zwei Streamlit-Frontends:
+
+#### 1. DORA Scenario Generator (`app.py`)
+
+Die Hauptanwendung für die Enterprise-Grade Szenario-Generierung:
 
 1. Starte die App: `streamlit run app.py`
 2. Wähle Szenario-Typ und Anzahl Injects
 3. Klicke auf "Szenario generieren"
 4. Prüfe Ergebnisse im "Ergebnisse" Tab
-5. Exportiere bei Bedarf (CSV/JSON)
+5. Exportiere bei Bedarf (CSV/JSON/MSEL)
 
-Siehe [FRONTEND.md](FRONTEND.md) für detaillierte Anleitung.
+**Features:**
+- Multi-Agenten-System mit LangGraph
+- Interaktiver Modus mit Decision-Points
+- DORA-Compliance Validierung
+- Neo4j State Management
+
+#### 2. Crisis Cockpit (`crisis_cockpit.py`)
+
+Spezielles Frontend für Bachelor-Thesis Evaluation:
+
+1. Starte die App: `streamlit run crisis_cockpit.py`
+2. Split-Screen Layout: Story Feed + State Reality
+3. Evaluation durchführen: Legacy Mode vs. Logic Guard Mode
+4. CSV-Export für Thesis-Daten
+
+**Features:**
+- Split-Screen Visualisierung
+- Dungeon Master Mode (manuelle Event-Injection)
+- Hallucination-Rating-System
+- Debug-Informationen (Raw JSON, Logic Checks)
+
+**📖 Detaillierte Anleitung:** Siehe [ANWENDUNGSANLEITUNG.md](ANWENDUNGSANLEITUNG.md)
 
 ### Programmgesteuerte Nutzung
 
@@ -242,11 +267,16 @@ stateDiagram-v2
 # Virtual Environment aktivieren
 source venv/bin/activate
 
-# Streamlit App starten
+# Option 1: DORA Scenario Generator (Hauptanwendung)
 streamlit run app.py
+
+# Option 2: Crisis Cockpit (Thesis-Evaluation)
+streamlit run crisis_cockpit.py
 ```
 
-Die App öffnet sich automatisch im Browser unter `http://localhost:8501`
+Die Apps öffnen sich automatisch im Browser unter `http://localhost:8501`
+
+**📖 Vollständige Anleitung:** Siehe [ANWENDUNGSANLEITUNG.md](ANWENDUNGSANLEITUNG.md)
 
 ### Programmgesteuert verwenden
 
@@ -273,23 +303,42 @@ for inject in result['injects']:
 
 ## ✅ Implementierte Features
 
+### Backend
 - ✅ LangGraph Workflow mit Multi-Agenten-System
 - ✅ 4 Agenten: Manager, Generator, Critic, Intel
 - ✅ Neo4j Knowledge Graph für State Management
 - ✅ FSM-basierte Phasen-Übergänge
-- ✅ Streamlit Frontend mit Visualisierungen
-- ✅ Export-Funktionalität (CSV, JSON)
 - ✅ DORA-Compliance Validierung
 - ✅ MITRE ATT&CK Integration
 - ✅ Second-Order Effects Tracking
 
+### Frontend
+- ✅ DORA Scenario Generator (`app.py`) - Enterprise-Grade UI
+- ✅ Crisis Cockpit (`crisis_cockpit.py`) - Thesis-Evaluation-Tool
+- ✅ Split-Screen Layout mit Live-State-Updates
+- ✅ Interaktiver Modus mit Decision-Points
+- ✅ Export-Funktionalität (CSV, JSON, MSEL, Excel)
+- ✅ Hallucination-Rating-System für Thesis-Evaluation
+- ✅ Debug-Informationen und Transparency-Features
+
 ## 📝 Nächste Schritte / Verbesserungspotenzial
 
-Siehe [STATUS.md](STATUS.md) für detaillierte Informationen zu:
-- Was das System jetzt kann
-- Was noch fehlt
-- Wie es eingesetzt werden kann
-- Roadmap für zukünftige Features
+Siehe [PROJECT_STATUS.md](PROJECT_STATUS.md) für detaillierte Informationen zu:
+- What we can do reliably
+- What we cover partially (work in progress)
+- What's missing (not yet implemented)
+- What would be nice to have
+- Implementation priority matrix
+
+## 📚 Dokumentation
+
+- **[QUICK_START.md](QUICK_START.md)** - 5-Minuten-Schnellstart
+- **[ANWENDUNGSANLEITUNG.md](ANWENDUNGSANLEITUNG.md)** - Vollständige Anwendungsanleitung
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Architektur-Dokumentation
+- **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Projekt-Status
+- **[THESIS_DOCUMENTATION.md](THESIS_DOCUMENTATION.md)** - Thesis-Dokumentation
+- **[CRISIS_COCKPIT_README.md](CRISIS_COCKPIT_README.md)** - Crisis Cockpit Guide
+- **[DOKUMENTATION_UEBERSICHT.md](DOKUMENTATION_UEBERSICHT.md)** - Übersicht aller Dokumentation
 
 ## 📄 Lizenz
 

@@ -30,18 +30,19 @@
 
 ## 📊 Status & Capabilities
 
-### [STATUS.md](STATUS.md)
-**Detaillierte Status-Übersicht**
-- ✅ Was das System jetzt kann
-- ⚠️ Was noch fehlt / Verbesserungspotenzial
-- 🚀 Wie das System eingesetzt werden kann
-- 📈 Roadmap
-- 🎓 Best Practices
+### [PROJECT_STATUS.md](PROJECT_STATUS.md)
+**Comprehensive Project Status Overview**
+- ✅ What we can do reliably
+- 🔄 What we cover partially (work in progress)
+- ❌ What's missing (not yet implemented)
+- 💡 What would be nice to have
+- 📊 Implementation priority matrix
+- 📈 Success metrics
 
-**Empfohlen für:**
-- Projekt-Manager
-- Entwickler, die Features hinzufügen wollen
-- Stakeholder, die den aktuellen Stand verstehen wollen
+**Recommended for:**
+- Project managers
+- Developers planning to add features
+- Stakeholders understanding current status
 
 ## 🔧 Setup & Installation
 
@@ -110,18 +111,19 @@ Siehe [README.md](README.md) für weitere Beispiele.
 
 ```
 BA/
-├── README.md          # Hauptdokumentation
-├── ARCHITECTURE.md    # Architektur-Diagramme
-├── STATUS.md          # Status & Capabilities
-├── QUICKSTART.md      # Schnellstart
-├── SETUP.md           # Setup-Anleitung
-├── FRONTEND.md        # Frontend-Anleitung
-├── DOCUMENTATION.md    # Diese Datei
+├── README.md              # Hauptdokumentation
+├── ARCHITECTURE.md        # Architektur-Diagramme
+├── PROJECT_STATUS.md      # Status & Capabilities (aktuell)
+├── QUICKSTART.md          # Schnellstart
+├── SETUP.md               # Setup-Anleitung
+├── FRONTEND.md            # Frontend-Anleitung
+├── DEPLOY_TO_GITHUB.md    # GitHub Deployment
+├── DOCUMENTATION.md        # Diese Datei (Index)
 │
-├── state_models.py     # Code-Dokumentation (Docstrings)
-├── neo4j_client.py    # Code-Dokumentation (Docstrings)
-├── workflows/         # Workflow-Dokumentation
-└── agents/            # Agenten-Dokumentation
+├── state_models.py        # Code-Dokumentation (Docstrings)
+├── neo4j_client.py        # Code-Dokumentation (Docstrings)
+├── workflows/             # Workflow-Dokumentation
+└── agents/                # Agenten-Dokumentation
 ```
 
 ## 🎯 Nach Anwendungsfall
@@ -129,9 +131,10 @@ BA/
 ### Ich möchte...
 - **...schnell starten**: [QUICKSTART.md](QUICKSTART.md)
 - **...alles verstehen**: [README.md](README.md)
-- **...den aktuellen Stand wissen**: [STATUS.md](STATUS.md)
+- **...den aktuellen Stand wissen**: [PROJECT_STATUS.md](PROJECT_STATUS.md)
 - **...das Frontend nutzen**: [FRONTEND.md](FRONTEND.md)
 - **...Setup-Probleme lösen**: [SETUP.md](SETUP.md)
+- **...auf GitHub deployen**: [DEPLOY_TO_GITHUB.md](DEPLOY_TO_GITHUB.md)
 - **...Code verstehen**: Siehe Docstrings in den Python-Dateien
 
 ## 📞 Support
@@ -145,8 +148,10 @@ Bei Fragen oder Problemen:
 
 Diese Dokumentationen werden regelmäßig aktualisiert:
 - **README.md**: Bei größeren Änderungen
-- **STATUS.md**: Bei neuen Features oder Änderungen
+- **PROJECT_STATUS.md**: Bei neuen Features oder Änderungen
 - **Code-Dokumentation**: Bei Code-Änderungen
+
+**PDF Generation**: Use `create_pdf_final.py` to generate combined PDF documentation
 
 **Letzte Aktualisierung**: 2025-01-XX
 
