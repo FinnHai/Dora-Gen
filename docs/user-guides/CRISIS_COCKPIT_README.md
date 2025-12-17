@@ -46,7 +46,7 @@
 ### Starten der App
 
 ```bash
-streamlit run crisis_cockpit.py
+streamlit run frontend/crisis_cockpit.py
 ```
 
 Die App läuft standardmäßig auf `http://localhost:8501`
@@ -68,7 +68,7 @@ Um die App mit dem echten LangGraph-Backend zu verbinden:
 
 2. **State vom Backend holen:**
    ```python
-   # In crisis_cockpit.py, ersetze get_mock_state() mit:
+   # In frontend/crisis_cockpit.py, ersetze get_mock_state() mit:
    from neo4j_client import Neo4jClient
    # ... Neo4j State abrufen und formatieren
    ```

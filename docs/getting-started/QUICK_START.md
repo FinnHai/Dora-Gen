@@ -37,7 +37,7 @@ docker run -d \
 ### Schritt 4: Setup testen
 
 ```bash
-python check_setup.py
+python scripts/check_setup.py
 ```
 
 ### Schritt 5: App starten
@@ -49,7 +49,7 @@ streamlit run app.py
 
 **Option B: Crisis Cockpit (Thesis-Evaluation)**
 ```bash
-streamlit run crisis_cockpit.py
+streamlit run frontend/crisis_cockpit.py
 ```
 
 ### Schritt 6: Erste Szenario generieren
@@ -68,5 +68,5 @@ streamlit run crisis_cockpit.py
 
 - **Vollständige Anleitung**: [Anwendungsanleitung](../user-guides/ANWENDUNGSANLEITUNG.md)
 - **Architektur**: [Architektur-Dokumentation](../architecture/ARCHITECTURE.md)
-- **Projekt-Status**: [PROJECT_STATUS.md](PROJECT_STATUS.md)
+- **Projekt-Status**: [PROJECT_STATUS.md](../PROJECT_STATUS.md)
 

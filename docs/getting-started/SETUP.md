@@ -41,7 +41,7 @@ OPENAI_API_KEY=dein_api_key_hier
 ## Schritt 4: Setup testen
 
 ```bash
-python test_setup.py
+python tests/test_setup.py
 ```
 
 Dieser Test prüft:

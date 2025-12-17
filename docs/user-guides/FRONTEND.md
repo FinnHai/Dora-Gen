@@ -84,10 +84,10 @@ python --version  # Sollte 3.10+ sein
 ### Neo4j-Verbindungsfehler
 ```bash
 # Starte Neo4j
-./start_neo4j.sh
+./scripts/start_neo4j.sh
 
 # Prüfe Verbindung
-python check_setup.py
+python scripts/check_setup.py
 ```
 
 ### OpenAI API Fehler

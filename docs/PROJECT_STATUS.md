@@ -14,7 +14,7 @@ Comprehensive overview of what the DORA Scenario Generator currently covers, wha
 
 ### Frontend Features
 - **DORA Scenario Generator** (`app.py`): Enterprise-grade Streamlit interface with clean design
-- **Crisis Cockpit** (`crisis_cockpit.py`): Thesis-Evaluation-Tool mit Split-Screen Layout
+- **Crisis Cockpit** (`frontend/crisis_cockpit.py`): Thesis-Evaluation-Tool mit Split-Screen Layout
 - **Dashboard**: Comprehensive analytics with metrics, charts, and visualizations
 - **Injects Display**: Detailed inject cards with filtering and search functionality
 - **Workflow Logs**: Complete audit trail of agent decisions and workflow operations

@@ -17,7 +17,7 @@
 Das Projekt besteht aus zwei Hauptkomponenten:
 
 1. **DORA Scenario Generator** (`app.py`) - Enterprise-Grade Szenario-Generierung
-2. **Crisis Cockpit** (`crisis_cockpit.py`) - Thesis-Evaluation-Tool
+2. **Crisis Cockpit** (`frontend/crisis_cockpit.py`) - Thesis-Evaluation-Tool
 
 ---
 
@@ -78,13 +78,13 @@ docker run -d \
   neo4j:latest
 
 # Oder lokal installiert
-./start_neo4j.sh
+./scripts/start_neo4j.sh
 ```
 
 ### Schritt 6: Basis-Infrastruktur initialisieren
 
 ```bash
-python check_setup.py
+python scripts/check_setup.py
 ```
 
 ---
@@ -102,7 +102,7 @@ Die App läuft auf: **http://localhost:8501**
 ### Option 2: Crisis Cockpit starten
 
 ```bash
-streamlit run crisis_cockpit.py
+streamlit run frontend/crisis_cockpit.py
 ```
 
 Die App läuft auf: **http://localhost:8501**
@@ -193,7 +193,7 @@ Das Crisis Cockpit ist ein spezielles Frontend für die Bachelor-Thesis Evaluati
 #### 1. App starten
 
 ```bash
-streamlit run crisis_cockpit.py
+streamlit run frontend/crisis_cockpit.py
 ```
 
 #### 2. Mock-Modus (Standard)
@@ -255,7 +255,7 @@ INJ-002,Legacy Mode,Hallucination,"Server name inconsistent",2024-01-15T10:31:00
 
 #### Schritt 1: Imports aktivieren
 
-In `crisis_cockpit.py`:
+In `frontend/crisis_cockpit.py`:
 
 ```python
 # Auskommentieren:
@@ -336,7 +336,7 @@ def force_next_step():
 ### Problem: "No injects were generated"
 
 **Lösung:**
-1. Prüfe Neo4j-Verbindung: `python check_setup.py`
+1. Prüfe Neo4j-Verbindung: `python scripts/check_setup.py`
 2. Prüfe OpenAI API Key in `.env`
 3. Prüfe Console-Logs für Fehler
 4. Stelle sicher, dass `interactive_mode=False` für automatische Generierung
@@ -380,7 +380,7 @@ def force_next_step():
 pkill -f streamlit
 
 # Crisis Cockpit starten
-streamlit run crisis_cockpit.py
+streamlit run frontend/crisis_cockpit.py
 
 # Oder DORA Generator
 streamlit run app.py

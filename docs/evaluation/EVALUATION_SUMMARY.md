@@ -47,7 +47,7 @@ Ein **quantitatives, wissenschaftlich fundiertes Evaluationsframework** für die
 
 ### 4. Einfaches Ausführungsskript (`run_evaluation.py`)
 
-- **Einfache Nutzung**: `python run_evaluation.py`
+- **Einfache Nutzung**: `python evaluation/run_evaluation.py`
 - **Optionen**: Spezifische Testtypen, Ausgabeverzeichnis, Verbose-Modus
 
 ## Verwendung
@@ -56,13 +56,13 @@ Ein **quantitatives, wissenschaftlich fundiertes Evaluationsframework** für die
 
 ```bash
 # Alle Testfälle evaluieren
-python run_evaluation.py
+python evaluation/run_evaluation.py
 
 # Mit spezifischen Typen
-python run_evaluation.py --test-types FSM_VIOLATION,STATE_INCONSISTENCY
+python evaluation/run_evaluation.py --test-types FSM_VIOLATION,STATE_INCONSISTENCY
 
 # Mit detaillierter Ausgabe
-python run_evaluation.py --verbose
+python evaluation/run_evaluation.py --verbose
 ```
 
 ### Programmgesteuert
@@ -107,7 +107,7 @@ report = evaluator.generate_report(Path("report.json"))
 
 ## Nächste Schritte
 
-1. **Evaluierung ausführen**: `python run_evaluation.py`
+1. **Evaluierung ausführen**: `python evaluation/run_evaluation.py`
 2. **Ergebnisse analysieren**: JSON-Report und CSV prüfen
 3. **Testfälle erweitern**: Weitere Edge Cases hinzufügen
 4. **Visualisieren**: Diagramme aus Metriken erstellen

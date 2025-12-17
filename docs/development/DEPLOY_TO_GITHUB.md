@@ -1,6 +1,8 @@
 # 🚀 Repository auf GitHub hochladen
 
-## Repository-Name: `dora-scenario-generator`
+## Repository-Name: `Dora-Gen`
+
+**Hinweis:** Das Repository existiert bereits unter: `https://github.com/FinnHai/Dora-Gen.git`
 
 ## Schritt-für-Schritt Anleitung
 
@@ -9,7 +11,7 @@
 1. Gehe zu [github.com](https://github.com) und logge dich ein
 2. Klicke auf das **"+"** Symbol oben rechts → **"New repository"**
 3. Fülle die Felder aus:
-   - **Repository name**: `dora-scenario-generator`
+   - **Repository name**: `Dora-Gen` (oder dein gewünschter Name)
    - **Description**: `DORA-konformer Szenariengenerator für Krisenmanagement (MVP) - Multi-Agenten-System mit LangGraph, Neo4j und OpenAI`
    - **Visibility**: 
      - ✅ **Private** (empfohlen - enthält API Keys in .env.example)
@@ -28,7 +30,7 @@ Nach dem Erstellen zeigt GitHub dir Befehle an. Führe diese aus:
 cd /Users/finnheintzann/Desktop/BA
 
 # Ersetze USERNAME mit deinem GitHub-Username
-git remote add origin https://github.com/USERNAME/dora-scenario-generator.git
+git remote add origin https://github.com/USERNAME/Dora-Gen.git
 
 # Branch umbenennen (empfohlen)
 git branch -M main

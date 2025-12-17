@@ -118,7 +118,7 @@ docker run -d \
 
 ```bash
 # Mit dem bereitgestellten Skript
-./start_neo4j.sh
+./scripts/start_neo4j.sh
 
 # Oder manuell mit Docker
 docker run -d \
@@ -132,10 +132,10 @@ docker run -d \
 
 ```bash
 # Prüfe ob alles funktioniert
-python check_setup.py
+python scripts/check_setup.py
 
 # Teste den Workflow
-python test_workflow.py
+python tests/test_workflow.py
 ```
 
 ## 📋 Verwendung
@@ -160,7 +160,7 @@ Die Hauptanwendung für die Enterprise-Grade Szenario-Generierung:
 - DORA-Compliance Validierung
 - Neo4j State Management
 
-#### 2. Crisis Cockpit (`crisis_cockpit.py`)
+#### 2. Crisis Cockpit (`frontend/crisis_cockpit.py`)
 
 Spezielles Frontend für Bachelor-Thesis Evaluation:
 
@@ -273,7 +273,7 @@ source venv/bin/activate
 streamlit run app.py
 
 # Option 2: Crisis Cockpit (Thesis-Evaluation)
-streamlit run crisis_cockpit.py
+streamlit run frontend/crisis_cockpit.py
 ```
 
 Die Apps öffnen sich automatisch im Browser unter `http://localhost:8501`

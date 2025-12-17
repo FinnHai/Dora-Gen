@@ -10,16 +10,16 @@ Dieses Framework ermöglicht eine **quantitative, wissenschaftlich fundierte Eva
 
 ```bash
 # Alle Testfälle evaluieren
-python run_evaluation.py
+python evaluation/run_evaluation.py
 
 # Mit spezifischen Halluzinationstypen
-python run_evaluation.py --test-types FSM_VIOLATION,STATE_INCONSISTENCY
+python evaluation/run_evaluation.py --test-types FSM_VIOLATION,STATE_INCONSISTENCY
 
 # Mit detaillierter Ausgabe
-python run_evaluation.py --verbose
+python evaluation/run_evaluation.py --verbose
 
 # Mit eigenem Ausgabeverzeichnis
-python run_evaluation.py --output-dir meine_ergebnisse
+python evaluation/run_evaluation.py --output-dir meine_ergebnisse
 ```
 
 ### 2. Ergebnisse interpretieren
@@ -216,7 +216,7 @@ pip install -r requirements.txt
 
 Für State-Checks muss Neo4j laufen:
 ```bash
-./start_neo4j.sh
+./scripts/start_neo4j.sh
 ```
 
 ### OpenAI API Key
