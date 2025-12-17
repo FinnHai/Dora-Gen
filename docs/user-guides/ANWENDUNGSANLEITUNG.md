@@ -414,10 +414,10 @@ docker logs neo4j
 
 ## Weitere Ressourcen
 
-- **Architektur**: Siehe `ARCHITECTURE.md`
+- **Architektur**: Siehe [Architektur-Dokumentation](../architecture/ARCHITECTURE.md)
 - **Thesis-Dokumentation**: Siehe `THESIS_DOCUMENTATION.md`
 - **Projekt-Status**: Siehe `PROJECT_STATUS.md`
-- **Crisis Cockpit**: Siehe `CRISIS_COCKPIT_README.md`
+- **Crisis Cockpit**: Siehe [Crisis Cockpit Guide](CRISIS_COCKPIT_README.md)
 
 ---
 

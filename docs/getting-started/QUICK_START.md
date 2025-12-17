@@ -66,7 +66,7 @@ streamlit run crisis_cockpit.py
 
 ## 📚 Weitere Ressourcen
 
-- **Vollständige Anleitung**: [ANWENDUNGSANLEITUNG.md](ANWENDUNGSANLEITUNG.md)
-- **Architektur**: [ARCHITECTURE.md](ARCHITECTURE.md)
+- **Vollständige Anleitung**: [Anwendungsanleitung](../user-guides/ANWENDUNGSANLEITUNG.md)
+- **Architektur**: [Architektur-Dokumentation](../architecture/ARCHITECTURE.md)
 - **Projekt-Status**: [PROJECT_STATUS.md](PROJECT_STATUS.md)
 

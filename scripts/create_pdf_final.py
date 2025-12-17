@@ -22,12 +22,12 @@ def create_pdf_documentation():
     
     doc_files = [
         ("README.md", "Projektübersicht"),
-        ("STATUS.md", "Status & Capabilities"),
-        ("QUICKSTART.md", "Schnellstart"),
-        ("SETUP.md", "Setup-Anleitung"),
-        ("FRONTEND.md", "Frontend-Anleitung"),
-        ("ARCHITECTURE.md", "Architektur"),
-        ("DOCUMENTATION.md", "Dokumentations-Übersicht"),
+        ("PROJECT_STATUS.md", "Status & Capabilities"),
+        ("docs/getting-started/QUICK_START.md", "Schnellstart"),
+        ("docs/getting-started/SETUP.md", "Setup-Anleitung"),
+        ("docs/user-guides/FRONTEND.md", "Frontend-Anleitung"),
+        ("docs/architecture/ARCHITECTURE.md", "Architektur"),
+        ("docs/architecture/DOCUMENTATION.md", "Dokumentations-Übersicht"),
     ]
     
     # HTML-Template mit Styling

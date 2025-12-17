@@ -420,7 +420,7 @@ class Neo4jClient:
         # Verwende Template falls angegeben
         if template_name:
             try:
-                from infrastructure_templates import get_available_templates, load_template_to_neo4j
+                from templates.infrastructure_templates import get_available_templates, load_template_to_neo4j
                 templates = get_available_templates()
                 if template_name in templates:
                     template = templates[template_name]
@@ -555,6 +555,16 @@ class Neo4jClient:
             )
             
             scenario_id = result.single()["scenario_id"]
+            
+            # FORCE SERIALIZATION: Convert Pydantic objects to dicts if needed
+            injects_payload = []
+            for inj in scenario_state.injects:
+                if hasattr(inj, 'model_dump'):
+                    injects_payload.append(inj.model_dump())  # Pydantic v2
+                elif hasattr(inj, 'dict'):
+                    injects_payload.append(inj.dict())  # Pydantic v1
+                else:
+                    injects_payload.append(inj)  # Already dict
             
             # Erstelle Inject Nodes und verknüpfe sie mit Scenario
             for inject in scenario_state.injects:

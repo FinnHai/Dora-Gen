@@ -2,6 +2,8 @@
 
 Ein Prototyp zur Generierung realistischer, logisch konsistenter Krisenszenarien (MSELs) für Finanzunternehmen, die den Anforderungen des **Digital Operational Resilience Act (DORA)** entsprechen.
 
+> 📁 **Projektstruktur:** Die Projektstruktur wurde neu organisiert. Siehe [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) für Details.
+
 ## 🎯 Projektziel
 
 Das System verwendet **Generative KI (LLMs)**, **Multi-Agenten-Systeme** und **Knowledge Graphs**, um:
@@ -53,7 +55,7 @@ graph TB
     CA --> NEO
 ```
 
-**📊 Detaillierte Architektur-Diagramme**: Siehe [ARCHITECTURE.md](ARCHITECTURE.md)
+**📊 Detaillierte Architektur-Diagramme**: Siehe [Architektur-Dokumentation](docs/architecture/ARCHITECTURE.md)
 
 ### Tech Stack
 
@@ -173,7 +175,7 @@ Spezielles Frontend für Bachelor-Thesis Evaluation:
 - Hallucination-Rating-System
 - Debug-Informationen (Raw JSON, Logic Checks)
 
-**📖 Detaillierte Anleitung:** Siehe [ANWENDUNGSANLEITUNG.md](ANWENDUNGSANLEITUNG.md)
+**📖 Detaillierte Anleitung:** Siehe [Anwendungsanleitung](docs/user-guides/ANWENDUNGSANLEITUNG.md)
 
 ### Programmgesteuerte Nutzung
 
@@ -244,7 +246,7 @@ stateDiagram-v2
 7. **State Update**: Schreibt Auswirkungen in Neo4j (inkl. Second-Order Effects)
 8. **Refine Loop**: Bei Validierungsfehlern zurück zum Generator (max. 2 Versuche)
 
-**📊 Vollständige Workflow-Diagramme**: Siehe [ARCHITECTURE.md](ARCHITECTURE.md)
+**📊 Vollständige Workflow-Diagramme**: Siehe [Architektur-Dokumentation](docs/architecture/ARCHITECTURE.md)
 
 ## 📊 Szenario-Typen
 
@@ -276,7 +278,7 @@ streamlit run crisis_cockpit.py
 
 Die Apps öffnen sich automatisch im Browser unter `http://localhost:8501`
 
-**📖 Vollständige Anleitung:** Siehe [ANWENDUNGSANLEITUNG.md](ANWENDUNGSANLEITUNG.md)
+**📖 Vollständige Anleitung:** Siehe [Anwendungsanleitung](docs/user-guides/ANWENDUNGSANLEITUNG.md)
 
 ### Programmgesteuert verwenden
 
@@ -332,13 +334,15 @@ Siehe [PROJECT_STATUS.md](PROJECT_STATUS.md) für detaillierte Informationen zu:
 
 ## 📚 Dokumentation
 
-- **[QUICK_START.md](QUICK_START.md)** - 5-Minuten-Schnellstart
-- **[ANWENDUNGSANLEITUNG.md](ANWENDUNGSANLEITUNG.md)** - Vollständige Anwendungsanleitung
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Architektur-Dokumentation
-- **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Projekt-Status
-- **[THESIS_DOCUMENTATION.md](THESIS_DOCUMENTATION.md)** - Thesis-Dokumentation
-- **[CRISIS_COCKPIT_README.md](CRISIS_COCKPIT_README.md)** - Crisis Cockpit Guide
-- **[DOKUMENTATION_UEBERSICHT.md](DOKUMENTATION_UEBERSICHT.md)** - Übersicht aller Dokumentation
+Die Dokumentation ist jetzt strukturiert im `docs/` Verzeichnis organisiert:
+
+- **[📚 Dokumentationsübersicht](docs/README.md)** - Zentrale Übersicht aller Dokumentation
+- **[🚀 Quick Start](docs/getting-started/QUICK_START.md)** - 5-Minuten-Schnellstart
+- **[📖 Anwendungsanleitung](docs/user-guides/ANWENDUNGSANLEITUNG.md)** - Vollständige Anwendungsanleitung
+- **[🏗️ Architektur](docs/architecture/ARCHITECTURE.md)** - Architektur-Dokumentation
+- **[📊 Projekt-Status](PROJECT_STATUS.md)** - Projekt-Status
+- **[🎓 Thesis](docs/thesis/THESIS_DOCUMENTATION.md)** - Thesis-Dokumentation
+- **[🎮 Crisis Cockpit](docs/user-guides/CRISIS_COCKPIT_README.md)** - Crisis Cockpit Guide
 
 ## 📄 Lizenz
 

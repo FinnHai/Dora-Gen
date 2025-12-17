@@ -137,6 +137,7 @@ class ScenarioWorkflow:
         iteration = state.get('iteration', 0)
         injects_count = len(state.get('injects', []))
         print(f"🔍 [State Check] Iteration {iteration}, Injects: {injects_count}, Phase: {state.get('current_phase', 'N/A')}")
+        print(f"   🔧 Hole Systemzustand aus Neo4j...")
         
         log_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -151,20 +152,64 @@ class ScenarioWorkflow:
             entities = self.neo4j_client.get_current_state()
             
             # Konvertiere Liste von Entities in Dictionary (entity_id -> entity_data)
+            # FILTER: Nur echte Assets, keine Inject-IDs oder Szenario-IDs
             system_state_dict = {}
             for entity in entities:
                 entity_id = entity.get("entity_id")
-                if entity_id:
-                    system_state_dict[entity_id] = {
-                        "status": entity.get("status", "unknown"),
-                        "entity_type": entity.get("entity_type"),
-                        "name": entity.get("name"),
-                        "criticality": entity.get("properties", {}).get("criticality", "standard"),
-                        **entity.get("properties", {})
+                if not entity_id:
+                    continue
+                
+                # STRENGER FILTER: Überspringe alle Inject-IDs und Szenario-IDs
+                if entity_id.startswith("INJ-") or entity_id.startswith("SCEN-"):
+                    continue
+                
+                # Prüfe Entity-Type
+                entity_type = entity.get("entity_type", "").lower() if entity.get("entity_type") else ""
+                
+                # Akzeptiere nur echte Assets:
+                # 1. Entity-Type ist gesetzt UND ist ein Asset-Typ
+                # 2. ODER ID beginnt mit Asset-Präfix (SRV-, APP-, DB-, SVC-)
+                is_valid_asset_type = entity_type in ["server", "application", "database", "service", "asset", "system"]
+                has_asset_prefix = any(entity_id.startswith(prefix) for prefix in ["SRV-", "APP-", "DB-", "SVC-", "SYS-"])
+                
+                if not (is_valid_asset_type or has_asset_prefix):
+                    # Überspringe wenn weder Typ noch Präfix passt
+                    continue
+                
+                system_state_dict[entity_id] = {
+                    "status": entity.get("status", "unknown"),
+                    "entity_type": entity.get("entity_type", "Asset"),
+                    "name": entity.get("name", entity_id),
+                    "criticality": entity.get("properties", {}).get("criticality", "standard"),
+                    **entity.get("properties", {})
+                }
+            
+            # Falls keine Assets gefunden, erstelle Standard-Assets
+            if not system_state_dict:
+                print("⚠️  Keine Assets im Systemzustand gefunden. Erstelle Standard-Assets...")
+                system_state_dict = {
+                    "SRV-001": {
+                        "status": "online",
+                        "entity_type": "Server",
+                        "name": "SRV-001",
+                        "criticality": "standard"
+                    },
+                    "SRV-002": {
+                        "status": "online",
+                        "entity_type": "Server",
+                        "name": "SRV-002",
+                        "criticality": "standard"
                     }
+                }
+                print(f"✅ Standard-Assets erstellt: {list(system_state_dict.keys())}")
+            
+            print(f"✅ [State Check] Systemzustand geladen: {len(system_state_dict)} Assets")
+            print(f"   Asset-IDs: {list(system_state_dict.keys())[:10]}")
             
             log_entry["details"] = {
                 "entities_found": len(entities),
+                "assets_after_filter": len(system_state_dict),
+                "asset_ids": list(system_state_dict.keys())[:10],
                 "status": "success"
             }
             
@@ -495,6 +540,21 @@ class ScenarioWorkflow:
                 }
             }
             
+            # Prüfe ob Refine-Loop (Feedback vom Critic vorhanden)
+            validation_feedback = None
+            if state.get("validation_result"):
+                validation_result = state["validation_result"]
+                if not validation_result.is_valid:
+                    # Erstelle Feedback-Dict für Generator
+                    validation_feedback = {
+                        "errors": validation_result.errors or [],
+                        "warnings": validation_result.warnings or [],
+                        "logical_consistency": validation_result.logical_consistency,
+                        "dora_compliance": validation_result.dora_compliance,
+                        "causal_validity": validation_result.causal_validity
+                    }
+                    print(f"   🔄 Refine-Modus: Verwende Feedback vom Critic Agent")
+            
             inject = self.generator_agent.generate_inject(
                 scenario_type=state["scenario_type"],
                 phase=state["current_phase"],
@@ -503,7 +563,8 @@ class ScenarioWorkflow:
                 manager_plan=manager_plan,
                 selected_ttp=selected_ttp,
                 system_state=state["system_state"],
-                previous_injects=state["injects"]
+                previous_injects=state["injects"],
+                validation_feedback=validation_feedback
             )
             
             log_entry["details"] = {
@@ -1553,18 +1614,19 @@ class ScenarioWorkflow:
         # Refine wenn nicht valide (max. 2 Versuche pro Inject)
         if not validation.is_valid:
             metadata = state.get("metadata", {})
-            current_inject_id = state.get("draft_inject", {}).inject_id if state.get("draft_inject") else None
+            current_inject_id = draft_inject.inject_id if draft_inject else None
             
             # Zähle Refine-Versuche pro Inject
             refine_key = f"refine_count_{current_inject_id}"
             refine_count = metadata.get(refine_key, 0)
             
-            print(f"   Validation nicht valide. Fehler: {validation.errors}")
+            print(f"   ❌ Validation nicht valide")
+            print(f"   Fehler: {validation.errors[:2] if validation.errors else 'Keine Details'}")
             print(f"   Refine-Versuche für {current_inject_id}: {refine_count}/2")
             
             if refine_count < 2:  # Max. 2 Refine-Versuche
                 metadata[refine_key] = refine_count + 1
-                print(f"   → Gehe zurück zu Generator (Refine)")
+                print(f"   → Gehe zurück zu Generator (Refine-Versuch {refine_count + 1})")
                 return "refine"
             else:
                 # Nach 2 Versuchen: Akzeptiere trotzdem (mit Warnung)
@@ -1572,7 +1634,7 @@ class ScenarioWorkflow:
                 print(f"   → Gehe zu State Update trotzdem")
                 return "update"
         
-        print(f"   Validation valide → Gehe zu State Update")
+        print(f"   ✅ Validation valide → Gehe zu State Update")
         return "update"
     
     def _should_continue(self, state: WorkflowState) -> str:

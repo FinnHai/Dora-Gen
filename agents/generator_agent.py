@@ -7,7 +7,7 @@ Verantwortlich für:
 - Integration von TTPs und Systemzustand
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from state_models import (
@@ -57,7 +57,8 @@ class GeneratorAgent:
         manager_plan: Dict[str, Any],
         selected_ttp: Dict[str, Any],
         system_state: Dict[str, Any],
-        previous_injects: list
+        previous_injects: list,
+        validation_feedback: Optional[Dict[str, Any]] = None
     ) -> Inject:
         """
         Generiert einen neuen Inject.
@@ -71,21 +72,84 @@ class GeneratorAgent:
             selected_ttp: Ausgewählte TTP
             system_state: Aktueller Systemzustand
             previous_injects: Liste vorheriger Injects für Konsistenz
+            validation_feedback: Optional Feedback vom Critic Agent für Refine-Loops
         
         Returns:
             Inject-Objekt (Pydantic)
         """
         # Erstelle Prompt für Inject-Generierung
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """Du bist ein Experte für Cyber-Security Incident Response.
+        is_refine = validation_feedback is not None
+        
+        system_prompt = """Du bist ein Experte für Cyber-Security Incident Response und Krisenmanagement.
 Deine Aufgabe ist es, realistische, detaillierte Injects für Krisenszenarien zu erstellen.
 
-WICHTIG:
-- Injects müssen logisch konsistent mit vorherigen Injects sein
-- Verwende realistische technische Details (IPs, Hashes, Domains)
-- Berücksichtige den aktuellen Systemzustand
-- Injects müssen DORA-konform sein (Artikel 25)
-- Verwende realistische Zeitstempel und Modalitäten"""),
+### CRITICAL ASSET BINDING RULES (NON-NEGOTIABLE) ###
+1. YOU MUST USE EXACT ASSET IDs from the provided "System State" (e.g., "SRV-001").
+2. DO NOT invent aliases (e.g., do NOT write "DC-01" if the ID is "SRV-001").
+3. DO NOT hallucinate new assets (e.g., "APP-SRV-99").
+4. If you mention an asset, you MUST include its ID in parentheses, e.g., "The Domain Controller (SRV-001)..."
+
+KRITISCHE ANFORDERUNGEN (MUSS erfüllt werden):
+
+1. LOGISCHE KONSISTENZ (KRITISCH):
+   - Injects müssen logisch konsistent mit vorherigen Injects sein
+   - Asset-Namen müssen konsistent sein (verwende dieselben Namen wie in vorherigen Injects)
+   - Berücksichtige den aktuellen Systemzustand (welche Assets sind bereits offline/compromised?)
+   - Keine temporalen Inkonsistenzen (Zeitstempel müssen chronologisch sein)
+
+2. CAUSAL VALIDITY (KRITISCH):
+   - MITRE TTP muss zur aktuellen Phase passen
+   - INITIAL_INCIDENT erfordert Initial Access/Execution, NICHT Persistence oder Exfiltration
+   - Keine unmöglichen Sequenzen (z.B. Exfiltration vor Initial Access)
+
+3. STATE-CONSISTENCY (KRITISCH - ABSOLUT VERBINDLICH):
+   - Verwende NUR Assets, die in der Liste "VERFÜGBARE ASSET-IDs" stehen
+   - Erstelle KEINE neuen Assets (keine SRV-003, APP-XXX, etc. wenn nicht in Liste)
+   - Wenn keine Assets verfügbar sind, verwende Standard-Assets: SRV-001, SRV-002
+   - Berücksichtige Asset-Status (offline Assets können nicht angegriffen werden)
+   - Keine Asset-Name-Inkonsistenzen
+   - Asset-IDs müssen EXAKT übereinstimmen (Groß-/Kleinschreibung beachten)
+
+4. REGULATORISCHE ASPEKTE (optional, nicht blockierend):
+   - INCIDENT RESPONSE: In INITIAL_INCIDENT/SUSPICIOUS_ACTIVITY → SOC-Aktivitäten erwähnen
+   - BUSINESS CONTINUITY: In ESCALATION_CRISIS/CONTAINMENT → Backup-Systeme erwähnen
+   - RECOVERY PLAN: In RECOVERY → Recovery-Maßnahmen erwähnen
+   - CRITICAL FUNCTIONS: Erwähne kritische Funktionen (generisch, keine spezifische Branche)
+
+5. REALISTIC SCENARIO:
+   - Verwende realistische technische Details (IPs, Hashes, Domains)
+   - Mindestens 50 Zeichen detaillierter Beschreibung
+   - Realistische Modalitäten (SIEM Alert, Email, etc.)
+
+FEHLER VERMEIDEN (KRITISCH - DIESE FEHLER FÜHREN ZURÜCKWEISUNG):
+- ❌ Asset existiert nicht im Systemzustand → IMMER zurückgewiesen!
+- ❌ Neue Assets erstellt (SRV-003, APP-XXX, etc.) → IMMER zurückgewiesen!
+- ❌ Asset-ID stimmt nicht exakt überein → IMMER zurückgewiesen!
+- ❌ Asset ist offline, wird aber als aktiv behandelt
+- ❌ MITRE-Technik passt nicht zur Phase
+- ❌ Temporale Inkonsistenz (Zeitstempel geht zurück)
+- ❌ Asset-Name-Inkonsistenz (verschiedene Namen für dasselbe Asset)
+- ❌ Kausale Inkonsistenz (Event ohne Vorgänger)
+
+ASSET-VALIDIERUNG (MUSS BEACHTET WERDEN):
+1. Prüfe die Liste "VERFÜGBARE ASSET-IDs" im Systemzustand
+2. Verwende NUR Asset-IDs aus dieser Liste
+3. Wenn Liste leer oder nur INJ-/SCEN-IDs: Verwende SRV-001, SRV-002
+4. Kopiere Asset-IDs EXAKT (keine Variationen!)"""
+        
+        if is_refine:
+            system_prompt += """
+
+⚠️ REFINE-MODUS: Der vorherige Inject wurde zurückgewiesen.
+Korrigiere die folgenden Fehler:
+{validation_errors}
+
+WICHTIG: Behebe ALLE genannten Fehler. Verwende dieselbe Inject-ID und denselben Zeitstempel.
+
+🚫 TTP FREEZE (FORBIDDEN): Your task is to FIX the logical errors reported by the Critic. You are FORBIDDEN from changing the selected MITRE TTP or the affected assets unless the Critic explicitly tells you they are wrong. Keep the core scenario stable."""
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
             
             ("human", """Erstelle einen Inject für ein {scenario_type} Szenario.
 
@@ -98,11 +162,22 @@ Kontext:
 Storyline-Plan:
 {manager_plan}
 
-Aktueller Systemzustand:
+⚠️ KRITISCH - SYSTEMZUSTAND (VERFÜGBARE ASSETS):
 {system_state}
 
-Vorherige Injects (für Konsistenz):
+⚠️ KRITISCH - VORHERIGE INJECTS (für Konsistenz - verwende dieselben Asset-Namen!):
 {previous_injects}
+
+{validation_feedback_section}
+
+⚠️ ABSOLUT VERBINDLICHE REGELN:
+1. Verwende NUR Asset-IDs aus der Liste "VERFÜGBARE ASSET-IDs" oben
+2. Erstelle KEINE neuen Assets (keine SRV-003, APP-XXX, DC-01, APP-SRV-01, DB-SRV-03, etc.)
+3. Wenn keine Assets verfügbar sind, verwende: SRV-001, SRV-002
+4. Asset-IDs müssen EXAKT übereinstimmen (Groß-/Kleinschreibung beachten)
+5. Kopiere Asset-IDs EXAKT aus der Liste - keine Variationen!
+6. WICHTIG: Verwende im Content-Feld NUR die Asset-IDs aus der Liste (z.B. "SRV-002", nicht "APP-SRV-01" oder "SRV-002 (APP-SRV-01)")
+7. Wenn ein Asset einen Namen hat (z.B. "SRV-002" = "Domain Controller"), verwende IMMER die Asset-ID "SRV-002" im Content, nicht den Namen!
 
 Erstelle einen realistischen Inject im folgenden JSON-Format:
 {{
@@ -118,15 +193,21 @@ Erstelle einen realistischen Inject im folgenden JSON-Format:
         "ioc_domain": "<Domain>",
         "severity": "<Low|Medium|High|Critical>"
     }},
-    "dora_compliance_tag": "<Art25_VulnScan|Art25_IncidentResponse|Art25_BusinessContinuity|etc.>",
     "business_impact": "<Beschreibung der geschäftlichen Auswirkung, optional>"
 }}
 
-WICHTIG:
-- Der Content muss realistisch und detailliert sein
+REGULATORISCHE ASPEKTE für Phase {phase} (optional, nicht blockierend):
+- Wenn Phase INITIAL_INCIDENT oder SUSPICIOUS_ACTIVITY: Content KÖNNTE SOC-Aktivitäten, Incident Response oder Security Operations erwähnen
+- Wenn Phase ESCALATION_CRISIS oder CONTAINMENT: Content KÖNNTE Business Continuity, Backup-Systeme oder Service-Wiederherstellung erwähnen
+- Wenn Phase RECOVERY: Content KÖNNTE Recovery-Maßnahmen, Backup-Wiederherstellung oder System-Recovery erwähnen
+- Diese Aspekte sind optional und blockieren nicht die Validierung
+
+Weitere Anforderungen:
+- Der Content muss realistisch und detailliert sein (mindestens 50 Zeichen)
 - Verwende echte technische Details (aber keine echten IOCs)
-- Stelle sicher, dass der Inject zur Phase und zum TTP passt
-- Berücksichtige den Systemzustand (welche Assets sind betroffen?)""")
+- Stelle sicher, dass der Inject zur Phase und zum TTP passt (TTP {ttp_id} sollte zur Phase {phase} passen)
+- Berücksichtige den Systemzustand (welche Assets sind betroffen?)
+- Business Impact sollte kritische Geschäftsfunktionen erwähnen""")
         ])
         
         # Formatierung
@@ -136,10 +217,55 @@ WICHTIG:
         previous_injects_str = self._format_previous_injects(previous_injects)
         manager_plan_str = self._format_manager_plan(manager_plan)
         
+        # Validation Feedback Formatierung
+        validation_feedback_section = ""
+        if validation_feedback:
+            errors = validation_feedback.get("errors", [])
+            warnings = validation_feedback.get("warnings", [])
+            if errors or warnings:
+                validation_feedback_section = "\n" + "="*60 + "\n"
+                validation_feedback_section += "⚠️ VALIDIERUNGSFEEDBACK - VORHERIGER VERSUCH ZURÜCKGEWIESEN\n"
+                validation_feedback_section += "="*60 + "\n"
+                if errors:
+                    validation_feedback_section += "\n❌ KRITISCHE FEHLER (MUSS behoben werden):\n"
+                    for i, error in enumerate(errors, 1):
+                        validation_feedback_section += f"  {i}. {error}\n"
+                
+                # Extrahiere verfügbare Assets aus Fehlermeldungen falls vorhanden
+                available_assets_from_error = []
+                for error in errors:
+                    if "Verfügbare Assets:" in error:
+                        # Verwende das global importierte re-Modul
+                        match = re.search(r"Verfügbare Assets: \[(.*?)\]", error)
+                        if match:
+                            assets_str = match.group(1)
+                            available_assets_from_error = [a.strip().strip("'\"") for a in assets_str.split(",")]
+                            # Filtere echte Assets (keine INJ-*, SCEN-* IDs)
+                            available_assets_from_error = [a for a in available_assets_from_error 
+                                                          if not a.startswith(("INJ-", "SCEN-"))]
+                
+                if available_assets_from_error:
+                    validation_feedback_section += f"\n✅ VERFÜGBARE ASSET-IDs (NUR DIESE VERWENDEN!): {', '.join(available_assets_from_error)}\n"
+                
+                if warnings:
+                    validation_feedback_section += "\n⚠️ WARNUNGEN (sollten beachtet werden):\n"
+                    for i, warning in enumerate(warnings, 1):
+                        validation_feedback_section += f"  {i}. {warning}\n"
+                
+                validation_feedback_section += "\n" + "="*60 + "\n"
+                validation_feedback_section += "ANWEISUNG: Korrigiere ALLE genannten Fehler.\n"
+                validation_feedback_section += "WICHTIG: Verwende NUR Asset-IDs aus der Liste oben!\n"
+                validation_feedback_section += "="*60 + "\n"
+        
         chain = prompt | self.llm
         
         # Retry-Logik für LLM-Call
         from utils.retry_handler import safe_llm_call
+        
+        print(f"🔧 [Generator] Starte LLM-Call für Inject {inject_id}")
+        print(f"   Phase: {phase.value}, TTP: {ttp_id}")
+        print(f"   System State Keys: {list(system_state.keys())[:5] if system_state else 'Keine'}")
+        print(f"   Validation Feedback: {'Ja' if validation_feedback else 'Nein'}")
         
         try:
             def _invoke_chain():
@@ -152,7 +278,9 @@ WICHTIG:
                     "ttp_id": ttp_id,
                     "manager_plan": manager_plan_str,
                     "system_state": system_state_str,
-                    "previous_injects": previous_injects_str
+                    "previous_injects": previous_injects_str,
+                    "validation_feedback_section": validation_feedback_section,
+                    "validation_errors": "\n".join(validation_feedback.get("errors", [])) if validation_feedback else ""
                 })
             
             response = safe_llm_call(
@@ -162,19 +290,34 @@ WICHTIG:
             )
             
             if response is None:
+                print(f"❌ [Generator] LLM-Call fehlgeschlagen für {inject_id}")
                 raise Exception("LLM-Call fehlgeschlagen nach mehreren Versuchen")
+            
+            print(f"✅ [Generator] LLM-Call erfolgreich für {inject_id}")
             
             # Parse JSON aus Response
             content = response.content
+            print(f"🔧 [Generator] Parse JSON aus Response (Länge: {len(content)} Zeichen)")
+            
+            # Verwende das global importierte re-Modul
             json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            print(f"🔧 [Generator] JSON Match gefunden: {json_match is not None}")
             
             if json_match:
+                print(f"🔧 [Generator] Parse JSON-Daten...")
                 inject_data = json.loads(json_match.group())
                 
-                # Erstelle TechnicalMetadata
+                # POST-PROCESSING: Validiere und korrigiere Assets
+                requested_assets = inject_data.get("technical_metadata", {}).get("affected_assets", [])
+                print(f"🔧 [Generator] Angeforderte Assets vom LLM: {requested_assets}")
+                
+                valid_assets = self._validate_and_correct_assets(requested_assets, system_state)
+                print(f"✅ [Generator] Korrigierte Assets: {valid_assets}")
+                
+                # Erstelle TechnicalMetadata mit korrigierten Assets
                 tech_meta = TechnicalMetadata(
                     mitre_id=inject_data.get("technical_metadata", {}).get("mitre_id", ttp_id),
-                    affected_assets=inject_data.get("technical_metadata", {}).get("affected_assets", []),
+                    affected_assets=valid_assets,  # Verwende korrigierte Assets
                     ioc_hash=inject_data.get("technical_metadata", {}).get("ioc_hash"),
                     ioc_ip=inject_data.get("technical_metadata", {}).get("ioc_ip"),
                     ioc_domain=inject_data.get("technical_metadata", {}).get("ioc_domain"),
@@ -191,19 +334,27 @@ WICHTIG:
                     modality=InjectModality(inject_data.get("modality", "SIEM Alert")),
                     content=inject_data.get("content", "Generic security event detected."),
                     technical_metadata=tech_meta,
-                    dora_compliance_tag=inject_data.get("dora_compliance_tag"),
+                    dora_compliance_tag=None,  # Nicht mehr verwendet, für Rückwärtskompatibilität None
                     business_impact=inject_data.get("business_impact")
                 )
                 
+                print(f"✅ [Generator] Inject {inject_id} erfolgreich erstellt")
+                print(f"   Assets: {valid_assets}")
+                print(f"   Content Preview: {inject.content[:80]}...")
+                
                 return inject
             else:
+                print(f"⚠️  [Generator] Kein JSON-Match gefunden in Response")
+                print(f"   Response Preview: {content[:200]}...")
                 # Fallback: Erstelle minimalen Inject
                 return self._create_fallback_inject(
                     inject_id, time_offset, phase, ttp_id, selected_ttp
                 )
                 
         except Exception as e:
-            print(f"⚠️  Fehler bei Inject-Generierung: {e}")
+            import traceback
+            print(f"❌ [Generator] Fehler bei Inject-Generierung für {inject_id}: {e}")
+            print(f"   Traceback: {traceback.format_exc()}")
             return self._create_fallback_inject(
                 inject_id, time_offset, phase, ttp_id, selected_ttp
             )
@@ -232,28 +383,50 @@ WICHTIG:
             modality=InjectModality.SIEM_ALERT,
             content=f"Security event detected related to {ttp.get('name', 'unknown technique')} (MITRE {ttp_id}).",
             technical_metadata=tech_meta,
-            dora_compliance_tag="Art25_IncidentResponse"
+            dora_compliance_tag=None  # Nicht mehr verwendet
         )
     
     def _format_system_state(self, system_state: Dict[str, Any]) -> str:
-        """Formatiert den Systemzustand."""
+        """
+        Formatiert den Systemzustand mit Fokus auf verfügbare Assets.
+        
+        Filtert nur echte Assets (Server, Applications) heraus, keine Inject-IDs oder Szenario-IDs.
+        """
         if not system_state or not isinstance(system_state, dict):
             return "Keine Systemzustand-Informationen verfügbar"
         
-        # system_state ist jetzt ein direktes Dictionary: entity_id -> entity_data
-        if not system_state:
-            return "Alle Systeme im Normalbetrieb"
+        # Filtere echte Assets heraus (keine INJ-*, SCEN-* IDs)
+        valid_assets = {}
+        for entity_id, entity_data in system_state.items():
+            # Überspringe Inject-IDs und Szenario-IDs
+            if entity_id.startswith("INJ-") or entity_id.startswith("SCEN-"):
+                continue
+            
+            # Nur echte Assets (Server, Applications, etc.)
+            if isinstance(entity_data, dict):
+                entity_type = entity_data.get("entity_type", "").lower()
+                if entity_type in ["server", "application", "database", "service", "asset"] or \
+                   entity_id.startswith(("SRV-", "APP-", "DB-", "SVC-")):
+                    valid_assets[entity_id] = entity_data
+        
+        if not valid_assets:
+            return "Keine Assets im Systemzustand verfügbar. Verwende Standard-Assets: SRV-001, SRV-002"
         
         lines = []
-        for entity_id, entity_data in list(system_state.items())[:5]:
-            if isinstance(entity_data, dict):
-                status = entity_data.get("status", "unknown")
-                name = entity_data.get("name", entity_id)
-                lines.append(f"- {name} ({entity_id}): {status}")
-            else:
-                lines.append(f"- {entity_id}: {entity_data}")
+        asset_list = []
+        for entity_id, entity_data in valid_assets.items():
+            status = entity_data.get("status", "unknown")
+            name = entity_data.get("name", entity_id)
+            entity_type = entity_data.get("entity_type", "Asset")
+            lines.append(f"- {name} ({entity_id}, {entity_type}): {status}")
+            asset_list.append(entity_id)
         
-        return "\n".join(lines) if lines else "Alle Systeme im Normalbetrieb"
+        # WICHTIG: Liste der verfügbaren Asset-IDs explizit angeben
+        result = "\n".join(lines) if lines else "Alle Systeme im Normalbetrieb"
+        result += f"\n\n⚠️ KRITISCH - VERFÜGBARE ASSET-IDs (NUR DIESE VERWENDEN!): {', '.join(asset_list)}"
+        result += f"\n❌ VERBOTEN: Erstelle KEINE neuen Assets! Verwende NUR die oben genannten Asset-IDs!"
+        
+        return result
     
     def _format_previous_injects(self, previous_injects: list) -> str:
         """Formatiert vorherige Injects für Konsistenz."""
@@ -279,4 +452,60 @@ WICHTIG:
         if manager_plan.get("affected_assets"):
             lines.append(f"Affected Assets: {', '.join(manager_plan['affected_assets'])}")
         return "\n".join(lines) if lines else "Kein spezifischer Plan"
+    
+    def _validate_and_correct_assets(
+        self, 
+        requested_assets: List[str], 
+        system_state: Dict[str, Any]
+    ) -> List[str]:
+        """
+        Validiert und korrigiert Asset-IDs.
+        
+        Filtert nicht-existierende Assets heraus und ersetzt sie durch verfügbare.
+        
+        Args:
+            requested_assets: Vom LLM angeforderte Assets
+            system_state: Aktueller Systemzustand
+            
+        Returns:
+            Liste von validen Asset-IDs
+        """
+        if not requested_assets:
+            # Fallback: Verwende Standard-Assets
+            return ["SRV-001"]
+        
+        # Filtere echte Assets aus system_state
+        valid_asset_ids = []
+        for entity_id in system_state.keys():
+            if not (entity_id.startswith("INJ-") or entity_id.startswith("SCEN-")):
+                if isinstance(system_state[entity_id], dict):
+                    entity_type = system_state[entity_id].get("entity_type", "").lower()
+                    if entity_type in ["server", "application", "database", "service", "asset"] or \
+                       entity_id.startswith(("SRV-", "APP-", "DB-", "SVC-")):
+                        valid_asset_ids.append(entity_id)
+        
+        # Falls keine Assets verfügbar, verwende Standard-Assets
+        if not valid_asset_ids:
+            valid_asset_ids = ["SRV-001", "SRV-002"]
+        
+        # Validiere angeforderte Assets
+        corrected_assets = []
+        for asset_id in requested_assets:
+            # Prüfe ob Asset existiert
+            if asset_id in valid_asset_ids:
+                corrected_assets.append(asset_id)
+            else:
+                # Asset existiert nicht - ersetze durch erstes verfügbares Asset
+                if valid_asset_ids:
+                    replacement = valid_asset_ids[0]
+                    if replacement not in corrected_assets:
+                        corrected_assets.append(replacement)
+                        print(f"⚠️  Asset '{asset_id}' existiert nicht. Ersetzt durch '{replacement}'")
+        
+        # Falls alle Assets ungültig waren, verwende mindestens ein Standard-Asset
+        if not corrected_assets and valid_asset_ids:
+            corrected_assets = [valid_asset_ids[0]]
+            print(f"⚠️  Alle angeforderte Assets ungültig. Verwende Standard-Asset: {corrected_assets[0]}")
+        
+        return corrected_assets if corrected_assets else ["SRV-001"]
 

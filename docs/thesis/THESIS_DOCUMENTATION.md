@@ -868,7 +868,7 @@ Das entwickelte System demonstriert erfolgreich, dass **Neuro-Symbolic AI** und 
 
 ### B. Code-Beispiele
 
-Siehe separate Code-Dokumentation in `DOCUMENTATION.md` und `ARCHITECTURE.md`.
+Siehe separate Code-Dokumentation in [DOCUMENTATION.md](../architecture/DOCUMENTATION.md) und [ARCHITECTURE.md](../architecture/ARCHITECTURE.md).
 
 ### C. System-Anforderungen
 
