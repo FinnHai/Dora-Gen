@@ -1,19 +1,15 @@
-# 📦 Archiv
+# Archiv
 
-Dieses Verzeichnis enthält veraltete oder duplizierte Dokumentationsdateien, die aus Gründen der Rückwärtskompatibilität oder Referenz aufbewahrt werden.
+Dieses Verzeichnis enthält archivierte Dateien, die nicht mehr aktiv verwendet werden.
 
-## Archivierte Dateien
+## Struktur
 
-### QUICKSTART.md
-- **Status:** Veraltet
-- **Ersetzt durch:** `docs/getting-started/QUICK_START.md`
-- **Grund:** Duplikat mit verbesserter Version
-
-### DOKUMENTATION_UEBERSICHT.md
-- **Status:** Veraltet
-- **Ersetzt durch:** `docs/README.md`
-- **Grund:** Neue strukturierte Dokumentationsorganisation
+- `old-reports/` - Alte Report-Dateien (jetzt in docs/)
+- `old-docs/` - Alte Dokumentations-Dateien (jetzt in docs/)
+- `old-logs/` - Alte Log-Dateien
+- `temp-files/` - Temporäre Dateien
+- `Most Important Files/` - Archivierte wichtige Dateien
 
 ## Hinweis
 
-Diese Dateien werden nicht mehr aktualisiert. Bitte verwende die aktuelle Dokumentation im `docs/` Verzeichnis.
+Diese Dateien werden aus historischen Gründen aufbewahrt, sind aber nicht Teil der aktiven Dokumentation.
