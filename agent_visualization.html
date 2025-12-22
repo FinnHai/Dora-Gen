@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenten Live-Visualisierung</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.paused {
+            background: #ffc107;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 0;
+            height: calc(100vh - 250px);
+            min-height: 600px;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .sidebar {
+            padding: 20px;
+            overflow-y: auto;
+            background: white;
+            height: 100%;
+        }
+
+        .sidebar h2 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .agent-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .agent-info.active {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .agent-info h3 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .agent-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-idle {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+
+        .status-active {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-completed {
+            background: #007bff;
+            color: white;
+        }
+
+        .status-error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .log-entry {
+            background: white;
+            border-left: 3px solid #667eea;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .log-entry.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .log-entry.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .log-timestamp {
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .log-message {
+            color: #333;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .file-input-label:hover {
+            background: #218838;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Agenten Live-Visualisierung</h1>
+            <p>Echtzeit-Überwachung des Multi-Agenten-Systems</p>
+        </div>
+
+        <div class="controls">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Bereit</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <div class="file-input-wrapper">
+                    <input type="file" id="jsonFileInput" accept=".json" />
+                    <label for="jsonFileInput" class="file-input-label">📁 JSON laden</label>
+                </div>
+                <button onclick="startPolling()">▶️ Live-Modus</button>
+                <button onclick="stopPolling()">⏸️ Pausieren</button>
+                <button onclick="resetVisualization()">🔄 Zurücksetzen</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div id="network-container"></div>
+            <div class="sidebar">
+                <h2>📊 Statistiken</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalInjects">0</div>
+                        <div class="stat-label">Injects</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalDecisions">0</div>
+                        <div class="stat-label">Entscheidungen</div>
+                    </div>
+                </div>
+
+                <h2>🤖 Agenten-Status</h2>
+                <div id="agentStatus"></div>
+
+                <h2>📝 Aktuelle Logs</h2>
+                <div id="logContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Globale Variablen
+        let network = null;
+        let nodes = null;
+        let edges = null;
+        let pollingInterval = null;
+        let currentData = null;
+
+        // Agenten-Konfiguration
+        const agents = {
+            'State Check': { color: '#6c757d', icon: '🔍' },
+            'Manager': { color: '#007bff', icon: '👔' },
+            'Intel': { color: '#17a2b8', icon: '📡' },
+            'Action Selection': { color: '#ffc107', icon: '🎯' },
+            'Generator': { color: '#28a745', icon: '✍️' },
+            'Critic': { color: '#dc3545', icon: '🔍' },
+            'State Update': { color: '#6f42c1', icon: '🔄' },
+            'Decision Point': { color: '#fd7e14', icon: '⚖️' }
+        };
+
+        // Workflow-Fluss definieren
+        const workflowFlow = [
+            { from: 'State Check', to: 'Manager' },
+            { from: 'Manager', to: 'Intel' },
+            { from: 'Intel', to: 'Action Selection' },
+            { from: 'Action Selection', to: 'Generator' },
+            { from: 'Generator', to: 'Critic' },
+            { from: 'Critic', to: 'Generator', label: 'Refine', color: '#dc3545', dashes: true },
+            { from: 'Critic', to: 'State Update', label: 'Valid', color: '#28a745' },
+            { from: 'State Update', to: 'State Check', label: 'Continue', color: '#6c757d', dashes: true },
+            { from: 'State Update', to: 'Decision Point', label: 'Decision', color: '#fd7e14', dashes: true },
+            { from: 'Decision Point', to: 'State Check', color: '#fd7e14', dashes: true }
+        ];
+
+        // Initialisiere Visualisierung
+        function initVisualization() {
+            const container = document.getElementById('network-container');
+            
+            // Erstelle Nodes
+            nodes = new vis.DataSet();
+            Object.keys(agents).forEach(agentName => {
+                nodes.add({
+                    id: agentName,
+                    label: `${agents[agentName].icon}\n${agentName}`,
+                    color: {
+                        background: agents[agentName].color,
+                        border: '#2d3436',
+                        highlight: {
+                            background: agents[agentName].color,
+                            border: '#2d3436'
+                        }
+                    },
+                    font: { color: 'white', size: 16, face: 'Arial' },
+                    shape: 'box',
+                    widthConstraint: { maximum: 150 },
+                    heightConstraint: { maximum: 80 }
+                });
+            });
+
+            // Erstelle Edges
+            edges = new vis.DataSet();
+            workflowFlow.forEach(flow => {
+                edges.add({
+                    from: flow.from,
+                    to: flow.to,
+                    label: flow.label || '',
+                    color: flow.color || { color: '#667eea' },
+                    dashes: flow.dashes || false,
+                    arrows: 'to',
+                    font: { align: 'middle', size: 12 }
+                });
+            });
+
+            // Netzwerk-Optionen
+            const options = {
+                nodes: {
+                    borderWidth: 2,
+                    shadow: true,
+                    shapeProperties: {
+                        useBorderWithImage: true
+                    }
+                },
+                edges: {
+                    width: 2,
+                    smooth: {
+                        type: 'continuous',
+                        roundness: 0.5
+                    },
+                    shadow: true
+                },
+                layout: {
+                    hierarchical: {
+                        enabled: true,
+                        direction: 'LR',
+                        sortMethod: 'directed',
+                        levelSeparation: 150,
+                        nodeSpacing: 200,
+                        treeSpacing: 200
+                    }
+                },
+                physics: {
+                    enabled: false
+                },
+                interaction: {
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true
+                }
+            };
+
+            const data = { nodes: nodes, edges: edges };
+            network = new vis.Network(container, data, options);
+
+            // Event-Handler für Node-Klicks
+            network.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    highlightAgent(nodeId);
+                }
+            });
+        }
+
+        // Lade Daten aus JSON
+        function loadData(jsonData) {
+            currentData = jsonData;
+            updateVisualization(jsonData);
+        }
+
+        // Aktualisiere Visualisierung mit neuen Daten
+        function updateVisualization(data) {
+            if (!data) return;
+
+            const workflowLogs = data.workflow_logs || [];
+            const agentDecisions = data.agent_decisions || [];
+            const injects = data.injects || [];
+
+            // Update Statistiken
+            document.getElementById('totalInjects').textContent = injects.length;
+            document.getElementById('totalDecisions').textContent = agentDecisions.length;
+
+            // Bestimme aktiven Agenten aus Logs
+            const activeAgents = new Set();
+            const agentStatuses = {};
+            
+            // Initialisiere alle Agenten als idle
+            Object.keys(agents).forEach(agentName => {
+                agentStatuses[agentName] = 'idle';
+            });
+
+            // Analysiere Logs für aktive Agenten
+            if (workflowLogs.length > 0) {
+                const latestLog = workflowLogs[workflowLogs.length - 1];
+                const currentNode = latestLog.node || latestLog.agent;
+                if (currentNode && agentStatuses.hasOwnProperty(currentNode)) {
+                    agentStatuses[currentNode] = 'active';
+                    activeAgents.add(currentNode);
+                }
+            }
+
+            // Analysiere Agent-Decisions
+            agentDecisions.forEach(decision => {
+                const agentName = decision.agent;
+                if (agentName && agentStatuses.hasOwnProperty(agentName)) {
+                    if (agentStatuses[agentName] !== 'active') {
+                        agentStatuses[agentName] = 'completed';
+                    }
+                }
+            });
+
+            // Update Node-Farben basierend auf Status
+            nodes.forEach(node => {
+                const status = agentStatuses[node.id] || 'idle';
+                let color = agents[node.id].color;
+                
+                if (status === 'active') {
+                    color = '#28a745'; // Grün für aktiv
+                } else if (status === 'completed') {
+                    color = '#007bff'; // Blau für abgeschlossen
+                }
+
+                nodes.update({
+                    id: node.id,
+                    color: {
+                        background: color,
+                        border: '#2d3436',
+                        highlight: {
+                            background: color,
+                            border: '#2d3436'
+                        }
+                    }
+                });
+            });
+
+            // Update Agent-Status-Sidebar
+            updateAgentStatusSidebar(agentStatuses, agentDecisions);
+
+            // Update Logs
+            updateLogs(workflowLogs.slice(-10)); // Zeige nur die letzten 10 Logs
+        }
+
+        // Update Agent-Status-Sidebar
+        function updateAgentStatusSidebar(agentStatuses, agentDecisions) {
+            const container = document.getElementById('agentStatus');
+            container.innerHTML = '';
+
+            Object.keys(agents).forEach(agentName => {
+                const status = agentStatuses[agentName] || 'idle';
+                const decisions = agentDecisions.filter(d => d.agent === agentName);
+                
+                const statusClass = `status-${status}`;
+                const statusText = {
+                    'idle': 'Bereit',
+                    'active': 'Aktiv',
+                    'completed': 'Abgeschlossen',
+                    'error': 'Fehler'
+                }[status] || 'Unbekannt';
+
+                const agentDiv = document.createElement('div');
+                agentDiv.className = `agent-info ${status === 'active' ? 'active' : ''}`;
+                agentDiv.innerHTML = `
+                    <h3>${agents[agentName].icon} ${agentName}</h3>
+                    <div class="agent-status ${statusClass}">${statusText}</div>
+                    ${decisions.length > 0 ? `<div style="margin-top: 8px; font-size: 0.85em; color: #6c757d;">${decisions.length} Entscheidung(en)</div>` : ''}
+                `;
+                container.appendChild(agentDiv);
+            });
+        }
+
+        // Update Logs
+        function updateLogs(logs) {
+            const container = document.getElementById('logContainer');
+            container.innerHTML = '';
+
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="empty-state">Keine Logs verfügbar</div>';
+                return;
+            }
+
+            logs.reverse().forEach(log => {
+                const logDiv = document.createElement('div');
+                logDiv.className = 'log-entry';
+                
+                if (log.errors && log.errors.length > 0) {
+                    logDiv.className += ' error';
+                } else if (log.warnings && log.warnings.length > 0) {
+                    logDiv.className += ' warning';
+                }
+
+                const timestamp = log.timestamp || new Date().toISOString();
+                const node = log.node || log.agent || 'Unknown';
+                const action = log.action || 'Aktion';
+                const message = log.message || `${action} von ${node}`;
+
+                logDiv.innerHTML = `
+                    <div class="log-timestamp">${new Date(timestamp).toLocaleString('de-DE')}</div>
+                    <div class="log-message"><strong>${node}:</strong> ${message}</div>
+                `;
+                container.appendChild(logDiv);
+            });
+        }
+
+        // Highlight Agent
+        function highlightAgent(agentName) {
+            // Reset alle Nodes
+            nodes.forEach(node => {
+                nodes.update({
+                    id: node.id,
+                    borderWidth: 2
+                });
+            });
+
+            // Highlight selektierten Agenten
+            nodes.update({
+                id: agentName,
+                borderWidth: 5
+            });
+        }
+
+        // Starte Polling
+        function startPolling() {
+            stopPolling();
+            document.getElementById('statusDot').classList.remove('paused');
+            document.getElementById('statusText').textContent = 'Live-Modus aktiv';
+            
+            // Versuche Daten von verschiedenen Quellen zu laden
+            pollingInterval = setInterval(() => {
+                // Option 1: Versuche JSON-Datei zu laden (wenn verfügbar)
+                fetch('agent_data.json')
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('File not found');
+                    })
+                    .then(data => {
+                        loadData(data);
+                    })
+                    .catch(() => {
+                        // Option 2: Versuche von Streamlit-Endpoint (wenn verfügbar)
+                        fetch('/api/agent_data')
+                            .then(response => {
+                                if (response.ok) {
+                                    return response.json();
+                                }
+                                throw new Error('API not available');
+                            })
+                            .then(data => {
+                                loadData(data);
+                            })
+                            .catch(() => {
+                                // Keine Daten verfügbar
+                                console.log('Keine Datenquelle verfügbar');
+                            });
+                    });
+            }, 2000); // Poll alle 2 Sekunden
+        }
+
+        // Stoppe Polling
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            document.getElementById('statusDot').classList.add('paused');
+            document.getElementById('statusText').textContent = 'Pausiert';
+        }
+
+        // Reset Visualisierung
+        function resetVisualization() {
+            stopPolling();
+            currentData = null;
+            document.getElementById('totalInjects').textContent = '0';
+            document.getElementById('totalDecisions').textContent = '0';
+            document.getElementById('agentStatus').innerHTML = '';
+            document.getElementById('logContainer').innerHTML = '<div class="empty-state">Keine Logs verfügbar</div>';
+            
+            // Reset Node-Farben
+            nodes.forEach(node => {
+                nodes.update({
+                    id: node.id,
+                    color: {
+                        background: agents[node.id].color,
+                        border: '#2d3436',
+                        highlight: {
+                            background: agents[node.id].color,
+                            border: '#2d3436'
+                        }
+                    }
+                });
+            });
+        }
+
+        // File Input Handler
+        document.getElementById('jsonFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const jsonData = JSON.parse(e.target.result);
+                        loadData(jsonData);
+                        alert('Daten erfolgreich geladen!');
+                    } catch (error) {
+                        alert('Fehler beim Laden der JSON-Datei: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Initialisiere beim Laden der Seite
+        window.addEventListener('load', function() {
+            initVisualization();
+        });
+    </script>
+</body>
+</html>

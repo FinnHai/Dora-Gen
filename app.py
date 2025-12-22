@@ -955,7 +955,7 @@ def main():
                     - **Typen:** {', '.join(set(e.get('type', 'Unknown') for e in entities))}
                     """)
             
-            if st.button("Load Template", use_container_width=True, disabled=(selected_template == "None (Use Existing)")):
+            if st.button("Load Template", width='stretch', disabled=(selected_template == "None (Use Existing)")):
                 if st.session_state.neo4j_client is None:
                     st.session_state.neo4j_client = Neo4jClient()
                     st.session_state.neo4j_client.connect()
@@ -1034,7 +1034,7 @@ def main():
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             """, unsafe_allow_html=True)
             
-            if st.button("Generate Scenario", type="primary", use_container_width=True):
+            if st.button("Generate Scenario", type="primary", width='stretch'):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
@@ -1138,7 +1138,7 @@ def main():
                 help="Load a predefined demo scenario for quick testing"
             )
             
-            if st.button("Load Demo Scenario", use_container_width=True, disabled=not selected_demo):
+            if st.button("Load Demo Scenario", width='stretch', disabled=not selected_demo):
                 try:
                     demo_result = load_demo_scenario(selected_demo)
                     st.session_state.scenario_result = demo_result
@@ -1214,7 +1214,7 @@ def main():
                     """, unsafe_allow_html=True)
                 
                 with col_opt2:
-                    if st.button("Wählen", key=f"decision_btn_{i}", use_container_width=True):
+                    if st.button("Wählen", key=f"decision_btn_{i}", width='stretch'):
                         selected_option = option_id
                         break
             
@@ -1543,7 +1543,7 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                     fig = create_phase_distribution_chart(injects)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 
                 with col_chart2:
                     st.markdown("""
@@ -1555,7 +1555,7 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                     timeline_fig = create_timeline_chart(injects)
-                    st.plotly_chart(timeline_fig, use_container_width=True)
+                    st.plotly_chart(timeline_fig, width='stretch')
                 
                 # DORA-Compliance Übersicht
                     st.markdown("---")
@@ -1583,7 +1583,7 @@ def main():
                             "DORA Tag": list(dora_tags.keys()),
                             "Anzahl": list(dora_tags.values())
                         }).sort_values("Anzahl", ascending=False)
-                        st.dataframe(dora_df, use_container_width=True, hide_index=True)
+                        st.dataframe(dora_df, width='stretch', hide_index=True)
                     
                     with col_dora2:
                         # DORA-Compliance Chart
@@ -1597,7 +1597,7 @@ def main():
                             paper_bgcolor="rgba(0,0,0,0)",
                             height=300
                         )
-                        st.plotly_chart(fig_dora, use_container_width=True)
+                        st.plotly_chart(fig_dora, width='stretch')
                 else:
                     st.info("Keine DORA-Compliance-Tags in diesem Szenario")
                 
@@ -1618,7 +1618,7 @@ def main():
                 if phase_transitions:
                     st.markdown("**🔄 Phase-Übergänge:**")
                     transitions_df = pd.DataFrame(phase_transitions)
-                    st.dataframe(transitions_df, use_container_width=True, hide_index=True)
+                    st.dataframe(transitions_df, width='stretch', hide_index=True)
                 else:
                     st.info("Keine Phasen-Übergänge in diesem Szenario")
                 
@@ -1786,7 +1786,7 @@ def main():
                         data=csv_data,
                         file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         mime="text/csv",
-                        use_container_width=True,
+                        width='stretch',
                         help="Export asCSV file"
                     )
                 
@@ -1797,7 +1797,7 @@ def main():
                         data=json_data,
                         file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                         mime="application/json",
-                        use_container_width=True,
+                        width='stretch',
                         help="Export as JSON file"
                     )
                 
@@ -1809,7 +1809,7 @@ def main():
                             data=excel_data,
                             file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            use_container_width=True,
+                            width='stretch',
                             help="Export as Excel file (.xlsx)"
                         )
                     except ImportError:
@@ -1825,7 +1825,7 @@ def main():
                             data=msel_data,
                             file_name=f"scenario_{result.get('scenario_id')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.msel",
                             mime="text/plain",
-                            use_container_width=True,
+                            width='stretch',
                             help="Export in MSEL format (Master Scenario Event List)"
                         )
                     except Exception as e:
@@ -1893,7 +1893,7 @@ def main():
                         paper_bgcolor="rgba(0,0,0,0)",
                         height=400
                     )
-                    st.plotly_chart(fig_assets, use_container_width=True)
+                    st.plotly_chart(fig_assets, width='stretch')
                     
                     # Asset Tags
                     asset_html = '<div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem;">'
@@ -1927,7 +1927,7 @@ def main():
                         "Usage": list(mitre_counts.values())
                     }).sort_values("Usage", ascending=False)
                     
-                    st.dataframe(mitre_df, use_container_width=True, hide_index=True)
+                    st.dataframe(mitre_df, width='stretch', hide_index=True)
                     st.caption("Tip: Higher usage counts indicate recurring attack patterns in the scenario.")
                 else:
                     st.info("No MITRE IDs available")
@@ -2006,7 +2006,7 @@ def main():
                                 data=csv_decisions,
                                 file_name=f"agent_decisions_{result.get('scenario_id', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                                 mime="text/csv",
-                                use_container_width=True,
+                                width='stretch',
                                 help="Export Agent-Entscheidungen als CSV für Analyse"
                             )
                         except Exception as e:
@@ -2020,7 +2020,7 @@ def main():
                                 data=json_decisions,
                                 file_name=f"agent_decisions_{result.get('scenario_id', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                                 mime="application/json",
-                                use_container_width=True,
+                                width='stretch',
                                 help="Export Agent-Entscheidungen als JSON"
                             )
                         except Exception as e:
@@ -2034,7 +2034,7 @@ def main():
                                 data=excel_decisions,
                                 file_name=f"agent_decisions_{result.get('scenario_id', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                use_container_width=True,
+                                width='stretch',
                                 help="Export Agent-Entscheidungen als Excel für detaillierte Analyse"
                             )
                         except ImportError:
@@ -2081,7 +2081,7 @@ def main():
                                 "Agent": list(agent_counts.keys()),
                                 "Anzahl": list(agent_counts.values())
                             }).sort_values("Anzahl", ascending=False)
-                            st.dataframe(agent_df, use_container_width=True, hide_index=True)
+                            st.dataframe(agent_df, width='stretch', hide_index=True)
                         
                         # Entscheidungs-Typen
                         if decision_types:
@@ -2090,7 +2090,7 @@ def main():
                                 "Typ": list(decision_types.keys()),
                                 "Anzahl": list(decision_types.values())
                             }).sort_values("Anzahl", ascending=False)
-                            st.dataframe(type_df, use_container_width=True, hide_index=True)
+                            st.dataframe(type_df, width='stretch', hide_index=True)
                         
                         # Entscheidungs-Qualität
                         st.markdown("**Entscheidungs-Qualität:**")
@@ -2125,7 +2125,7 @@ def main():
                                 low_quality = len(quality_df[quality_df["Quality Score"] == "Low"])
                                 st.metric("Low Quality", low_quality)
                             
-                            st.dataframe(quality_df, use_container_width=True, hide_index=True)
+                            st.dataframe(quality_df, width='stretch', hide_index=True)
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     
@@ -2254,7 +2254,7 @@ def main():
                             """, unsafe_allow_html=True)
                         
                         with col_scen2:
-                            if st.button("📥 Load", key=f"load_{scenario.get('scenario_id')}", use_container_width=True):
+                            if st.button("📥 Load", key=f"load_{scenario.get('scenario_id')}", width='stretch'):
                                 try:
                                     loaded_scenario = st.session_state.neo4j_client.get_scenario(scenario.get('scenario_id'))
                                     if loaded_scenario:
@@ -2305,7 +2305,7 @@ def main():
                                     st.error(f"Fehler beim Laden: {e}")
                         
                         with col_scen3:
-                            if st.button("🗑️ Delete", key=f"delete_{scenario.get('scenario_id')}", use_container_width=True):
+                            if st.button("🗑️ Delete", key=f"delete_{scenario.get('scenario_id')}", width='stretch'):
                                 try:
                                     if st.session_state.neo4j_client.delete_scenario(scenario.get('scenario_id')):
                                         st.success(f"Szenario {scenario.get('scenario_id')} gelöscht!")

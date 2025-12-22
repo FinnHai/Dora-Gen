@@ -31,6 +31,7 @@ from state_models import (
     ScenarioEndCondition,
     UserDecision
 )
+from forensic_logger import get_forensic_logger
 
 
 class ScenarioWorkflow:
@@ -555,6 +556,9 @@ class ScenarioWorkflow:
                     }
                     print(f"   🔄 Refine-Modus: Verwende Feedback vom Critic Agent")
             
+            # Hole user_feedback aus State (Human-in-the-Loop)
+            user_feedback = state.get("user_feedback")
+            
             inject = self.generator_agent.generate_inject(
                 scenario_type=state["scenario_type"],
                 phase=state["current_phase"],
@@ -564,7 +568,8 @@ class ScenarioWorkflow:
                 selected_ttp=selected_ttp,
                 system_state=state["system_state"],
                 previous_injects=state["injects"],
-                validation_feedback=validation_feedback
+                validation_feedback=validation_feedback,
+                user_feedback=user_feedback
             )
             
             log_entry["details"] = {
@@ -657,12 +662,44 @@ class ScenarioWorkflow:
                     "workflow_logs": logs
                 }
             
+            # Hole Mode aus State (Default: 'thesis')
+            mode = state.get("mode", "thesis")
+            
+            # Forensisches Logging: DRAFT Inject (vor Validierung)
+            scenario_id = state.get("scenario_id", "UNKNOWN")
+            iteration = state.get("iteration", 0)
+            metadata = state.get("metadata", {})
+            current_inject_id = draft_inject.inject_id if draft_inject else None
+            refine_key = f"refine_count_{current_inject_id}"
+            refine_count = metadata.get(refine_key, 0)
+            
+            # Logge DRAFT nur wenn im Thesis Mode
+            if mode == 'thesis':
+                forensic_logger = get_forensic_logger(scenario_id)
+                forensic_logger.log_draft(
+                    scenario_id=scenario_id,
+                    inject=draft_inject,
+                    iteration=iteration,
+                    refine_count=refine_count
+                )
+            
             validation = self.critic_agent.validate_inject(
                 inject=draft_inject,
                 previous_injects=state["injects"],
                 current_phase=state["current_phase"],
-                system_state=state["system_state"]
+                system_state=state["system_state"],
+                mode=mode
             )
+            
+            # Forensisches Logging: CRITIC Validierungsergebnis
+            if mode == 'thesis':
+                forensic_logger.log_critic(
+                    scenario_id=scenario_id,
+                    inject_id=draft_inject.inject_id,
+                    validation_result=validation,
+                    iteration=iteration,
+                    refine_count=refine_count
+                )
             
             log_entry["details"] = {
                 "inject_id": draft_inject.inject_id,
@@ -1630,9 +1667,40 @@ class ScenarioWorkflow:
                 return "refine"
             else:
                 # Nach 2 Versuchen: Akzeptiere trotzdem (mit Warnung)
+                # Forensisches Logging: REFINED Inject (akzeptiert trotz Warnungen)
+                mode = state.get("mode", "thesis")
+                if mode == 'thesis' and draft_inject:
+                    scenario_id = state.get("scenario_id", "UNKNOWN")
+                    forensic_logger = get_forensic_logger(scenario_id)
+                    forensic_logger.log_refined(
+                        scenario_id=scenario_id,
+                        inject=draft_inject,
+                        iteration=state.get("iteration", 0),
+                        refine_count=refine_count,
+                        was_refined=True
+                    )
+                
                 print(f"⚠️  Inject nach {refine_count} Refine-Versuchen akzeptiert (mit Warnungen)")
                 print(f"   → Gehe zu State Update trotzdem")
                 return "update"
+        
+        # Forensisches Logging: REFINED Inject (erfolgreich validiert)
+        mode = state.get("mode", "thesis")
+        if mode == 'thesis' and draft_inject:
+            scenario_id = state.get("scenario_id", "UNKNOWN")
+            metadata = state.get("metadata", {})
+            current_inject_id = draft_inject.inject_id if draft_inject else None
+            refine_key = f"refine_count_{current_inject_id}"
+            refine_count = metadata.get(refine_key, 0)
+            
+            forensic_logger = get_forensic_logger(scenario_id)
+            forensic_logger.log_refined(
+                scenario_id=scenario_id,
+                inject=draft_inject,
+                iteration=state.get("iteration", 0),
+                refine_count=refine_count,
+                was_refined=(refine_count > 0)
+            )
         
         print(f"   ✅ Validation valide → Gehe zu State Update")
         return "update"
@@ -1698,7 +1766,8 @@ class ScenarioWorkflow:
     def generate_scenario(
         self,
         scenario_type: ScenarioType,
-        scenario_id: Optional[str] = None
+        scenario_id: Optional[str] = None,
+        mode: str = 'thesis'
     ) -> Dict[str, Any]:
         """
         Generiert ein vollständiges Szenario.
@@ -1737,7 +1806,8 @@ class ScenarioWorkflow:
             "pending_decision": None,
             "user_decisions": [],
             "end_condition": None,
-            "interactive_mode": self.interactive_mode
+            "interactive_mode": self.interactive_mode,
+            "mode": mode  # 'legacy' oder 'thesis'
         }
         
         print(f"🚀 Starte Szenario-Generierung: {scenario_id}")

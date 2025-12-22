@@ -504,6 +504,147 @@ class Neo4jClient:
             
             print("✓ Basis-Infrastruktur initialisiert")
 
+    def seed_enterprise_infrastructure(self):
+        """
+        Seeded die Datenbank mit genau 40 Assets für Stress-Tests.
+        
+        Erstellt verwirrend ähnliche Asset-Namen, um LLM-Hallucinations unter
+        hoher kognitiver Belastung zu testen.
+        
+        WICHTIG: Löscht alle bestehenden Entities vor dem Seeding!
+        """
+        if not self.driver:
+            raise RuntimeError("Neo4j Client nicht verbunden. Rufe connect() auf.")
+        
+        # Definiere genau 40 Assets mit verwirrend ähnlichen Namen
+        enterprise_assets = []
+        
+        # 5x Core Servers (SRV-CORE-001 bis 005)
+        for i in range(1, 6):
+            enterprise_assets.append({
+                "id": f"SRV-CORE-{i:03d}",
+                "type": "Server",
+                "name": f"Core Server {i:03d}",
+                "status": "normal"
+            })
+        
+        # 15x App Servers (SRV-APP-001 bis 015) - leicht zu verwechseln!
+        for i in range(1, 16):
+            enterprise_assets.append({
+                "id": f"SRV-APP-{i:03d}",
+                "type": "Server",
+                "name": f"Application Server {i:03d}",
+                "status": "normal"
+            })
+        
+        # 10x Databases (DB-PROD-01 vs DB-DEV-01 - sehr verwirrend ähnlich!)
+        # 5 Production Databases
+        for i in range(1, 6):
+            enterprise_assets.append({
+                "id": f"DB-PROD-{i:02d}",
+                "type": "Database",
+                "name": f"Production Database {i:02d}",
+                "status": "normal"
+            })
+        # 5 Development Databases (können mit PROD verwechselt werden!)
+        for i in range(1, 6):
+            enterprise_assets.append({
+                "id": f"DB-DEV-{i:02d}",
+                "type": "Database",
+                "name": f"Development Database {i:02d}",
+                "status": "normal"
+            })
+        
+        # 10x Workstations (WS-FINANCE-01 bis 10)
+        for i in range(1, 11):
+            enterprise_assets.append({
+                "id": f"WS-FINANCE-{i:02d}",
+                "type": "Workstation",
+                "name": f"Finance Workstation {i:02d}",
+                "status": "normal"
+            })
+        
+        with self.driver.session(database=self.database) as session:
+            # Lösche ALLE bestehenden Entities (inklusive Szenarien und Injects)
+            print("🗑️  Lösche bestehende Datenbank-Inhalte...")
+            session.run("MATCH (n) DETACH DELETE n")
+            
+            # Erstelle alle Enterprise Assets
+            print(f"🏢 Erstelle {len(enterprise_assets)} Enterprise Assets...")
+            for asset in enterprise_assets:
+                query = """
+                CREATE (e:Entity {
+                    id: $id,
+                    type: $type,
+                    name: $name,
+                    status: $status
+                })
+                """
+                session.run(query, **asset)
+            
+            # Erstelle einige kritische Beziehungen (für Realismus)
+            relationships = [
+                # Payment System Dependencies
+                ("SRV-APP-01", "RUNS_ON", "SRV-CORE-01"),
+                ("SRV-APP-02", "RUNS_ON", "SRV-CORE-02"),
+                ("SRV-APP-01", "USES", "DB-SQL-03"),
+                ("SRV-APP-02", "USES", "DB-SQL-04"),
+                
+                # HR System Dependencies
+                ("SRV-APP-04", "RUNS_ON", "SRV-CORE-03"),
+                ("SRV-APP-05", "USES", "DB-SQL-01"),
+                ("SRV-APP-06", "USES", "DB-SQL-02"),
+                
+                # CRM Dependencies
+                ("SRV-APP-07", "RUNS_ON", "SRV-CORE-04"),
+                ("SRV-APP-08", "USES", "DB-SQL-01"),
+                
+                # Legacy System Dependencies
+                ("LEGACY-PAYMENT-V1", "RUNS_ON", "LEGACY-SRV-01"),
+                ("LEGACY-PAYMENT-V2", "RUNS_ON", "LEGACY-SRV-02"),
+                ("LEGACY-PAYMENT-V1", "USES", "LEGACY-DB-01"),
+                
+                # Network Dependencies
+                ("SRV-CORE-01", "CONNECTS_TO", "FW-INT-01"),
+                ("SRV-CORE-02", "CONNECTS_TO", "FW-INT-01"),
+                ("FW-INT-01", "CONNECTS_TO", "ROUTER-CORE-01"),
+                ("ROUTER-CORE-01", "CONNECTS_TO", "FW-EXT-01"),
+            ]
+            
+            # Erstelle einige kritische Beziehungen (für Realismus)
+            relationships = [
+                # Core Server Dependencies
+                ("SRV-APP-001", "RUNS_ON", "SRV-CORE-001"),
+                ("SRV-APP-002", "RUNS_ON", "SRV-CORE-002"),
+                ("SRV-APP-003", "RUNS_ON", "SRV-CORE-003"),
+                
+                # Database Dependencies (verwirrend: PROD vs DEV)
+                ("SRV-APP-001", "USES", "DB-PROD-01"),
+                ("SRV-APP-002", "USES", "DB-PROD-02"),
+                ("SRV-APP-003", "USES", "DB-DEV-01"),  # Kann mit PROD verwechselt werden!
+                ("SRV-APP-004", "USES", "DB-DEV-02"),
+                
+                # Workstation Dependencies
+                ("WS-FINANCE-01", "CONNECTS_TO", "SRV-APP-001"),
+                ("WS-FINANCE-02", "CONNECTS_TO", "SRV-APP-002"),
+            ]
+            
+            for source_id, rel_type, target_id in relationships:
+                query = f"""
+                MATCH (source {{id: $source_id}}), (target {{id: $target_id}})
+                CREATE (source)-[r:{rel_type}]->(target)
+                """
+                session.run(query, source_id=source_id, target_id=target_id)
+            
+            print(f"✅ Enterprise Infrastructure erfolgreich geseeded: {len(enterprise_assets)} Assets erstellt")
+            print(f"   - Core Servers: 5 (SRV-CORE-001 bis 005)")
+            print(f"   - App Servers: 15 (SRV-APP-001 bis 015)")
+            print(f"   - Production Databases: 5 (DB-PROD-01 bis 05)")
+            print(f"   - Development Databases: 5 (DB-DEV-01 bis 05) - leicht mit PROD zu verwechseln!")
+            print(f"   - Finance Workstations: 10 (WS-FINANCE-01 bis 10)")
+            print(f"   - Relationships: {len(relationships)}")
+            return len(enterprise_assets)
+
     def __enter__(self):
         """Context Manager Support."""
         self.connect()

@@ -12,6 +12,11 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from io import BytesIO
 import uuid
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Backend Integration (auskommentiert für Mock-Mode)
 # from neo4j_client import Neo4jClient
@@ -210,7 +215,7 @@ def render_story_column():
             )
     
     with col_mode2:
-        if st.button("Export Evaluation Data (CSV)", use_container_width=True, key="export_csv"):
+        if st.button("Export Evaluation Data (CSV)", width='stretch', key="export_csv"):
             download_evaluation_csv()
     
     st.divider()
@@ -294,13 +299,13 @@ def render_inject_card(inject: Dict[str, Any], original_index: int):
         col_eval1, col_eval2, col_eval3 = st.columns([1, 1, 4])
         
         with col_eval1:
-            if st.button("Consistent", key=f"consistent_{original_index}", use_container_width=True):
+            if st.button("Consistent", key=f"consistent_{original_index}", width='stretch'):
                 record_evaluation(inject['inject_id'], "Consistent", None)
                 st.success("Marked as Consistent")
                 st.rerun()
         
         with col_eval2:
-            if st.button("Hallucination", key=f"hallucination_{original_index}", use_container_width=True):
+            if st.button("Hallucination", key=f"hallucination_{original_index}", width='stretch'):
                 st.session_state[f"show_reason_{original_index}"] = True
         
         # Error Reason Input (wenn Hallucination geklickt wurde)
@@ -506,7 +511,7 @@ def render_interaction_module():
         key="manual_event_input"
     )
     
-    if st.sidebar.button("Inject Event", use_container_width=True, key="inject_event"):
+    if st.sidebar.button("Inject Event", width='stretch', key="inject_event"):
         if manual_event:
             inject_manual_event(manual_event)
             st.sidebar.success("Event injected successfully")
@@ -537,12 +542,12 @@ def render_interaction_module():
     
     col_force1, col_force2 = st.sidebar.columns(2)
     with col_force1:
-        if st.button("Force Step", use_container_width=True, key="force_step"):
+        if st.button("Force Step", width='stretch', key="force_step"):
             force_next_step()
             st.rerun()
     
     with col_force2:
-        auto_play = st.button("Auto-Play (5 steps)", use_container_width=True, key="auto_play")
+        auto_play = st.button("Auto-Play (5 steps)", width='stretch', key="auto_play")
         if auto_play:
             st.session_state.auto_play_active = True
             st.session_state.auto_play_steps = 5

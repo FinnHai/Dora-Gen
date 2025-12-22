@@ -5,7 +5,7 @@ Definiert den State, der zwischen den Agenten-Nodes im Workflow
 übergeben wird.
 """
 
-from typing import TypedDict, List, Optional, Dict, Any
+from typing import TypedDict, List, Optional, Dict, Any, Literal
 from datetime import datetime
 from state_models import (
     Inject,
@@ -65,4 +65,10 @@ class WorkflowState(TypedDict):
     user_decisions: List[Dict[str, Any]]  # Alle getroffenen Benutzer-Entscheidungen
     end_condition: Optional[str]  # Aktuelle End-Bedingung (FATAL, VICTORY, NORMAL_END, CONTINUE)
     interactive_mode: bool  # Ob interaktiver Modus aktiviert ist
+    
+    # Mode für A/B Testing
+    mode: Literal['legacy', 'thesis']  # 'legacy' = Skip Validation, 'thesis' = Full Validation (Default)
+    
+    # Human-in-the-Loop Feedback
+    user_feedback: Optional[str]  # Letzte Response Action vom Benutzer (z.B. "Shutdown SRV-001")
 

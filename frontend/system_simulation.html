@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System-Simulation - Multi-Agenten-System</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 600px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8fafc;
+        }
+
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .agent-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .agent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .agent-card.active::before {
+            transform: scaleX(1);
+        }
+
+        .agent-card.active {
+            border-color: #667eea;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .agent-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .agent-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .agent-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .status-idle {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        .status-active {
+            background: #dbeafe;
+            color: #1e40af;
+            animation: pulse 2s infinite;
+        }
+
+        .status-completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .agent-info {
+            font-size: 0.9em;
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .agent-info strong {
+            color: #1e293b;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .workflow-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .workflow-step::after {
+            content: '→';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5em;
+            color: #cbd5e1;
+        }
+
+        .workflow-step:last-child::after {
+            display: none;
+        }
+
+        .step-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 1.5em;
+            transition: all 0.3s ease;
+        }
+
+        .workflow-step.active .step-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .workflow-step.completed .step-icon {
+            background: #10b981;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            color: #cbd5e1;
+            border-bottom: 1px solid #334155;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #64748b;
+            margin-right: 10px;
+        }
+
+        .log-agent {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .log-message {
+            color: #e2e8f0;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Multi-Agenten-System Simulation</h1>
+            <p>Live-Visualisierung des DORA-Szenariengenerators</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-iterations">0</div>
+                <div class="stat-label">Iterationen</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-injects">0</div>
+                <div class="stat-label">Injects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-accepted">0</div>
+                <div class="stat-label">Akzeptiert</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-refines">0</div>
+                <div class="stat-label">Refinements</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>🕸️ System-Architektur</h2>
+                <div id="network-container"></div>
+            </div>
+
+            <div class="card">
+                <h2>👥 Agenten-Status</h2>
+                <div class="agents-grid">
+                    <div class="agent-card" id="agent-manager">
+                        <div class="agent-header">
+                            <div class="agent-name">📋 Manager Agent</div>
+                            <div class="agent-status status-idle">Idle</div>
+                        </div>
+                        <div class="agent-info">
+                            <strong>Aufgabe:</strong> Erstellt High-Level Storyline-Pläne<br>
+                            <strong>Status:</strong> <span id="manager-status">Bereit</span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card" id="agent-intel">
+                        <div class="agent-header">
+                            <div class="agent-name">🔎 Intel Agent</div>
+                            <div class="agent-status status-idle">Idle</div>
+                        </div>
+                        <div class="agent-info">
+                            <strong>Aufgabe:</strong> Holt relevante MITRE TTPs<br>
+                            <strong>Status:</strong> <span id="intel-status">Bereit</span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card" id="agent-generator">
+                        <div class="agent-header">
+                            <div class="agent-name">✍️ Generator Agent</div>
+                            <div class="agent-status status-idle">Idle</div>
+                        </div>
+                        <div class="agent-info">
+                            <strong>Aufgabe:</strong> Generiert detaillierte Injects<br>
+                            <strong>Status:</strong> <span id="generator-status">Bereit</span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card" id="agent-critic">
+                        <div class="agent-header">
+                            <div class="agent-name">🔍 Critic Agent</div>
+                            <div class="agent-status status-idle">Idle</div>
+                        </div>
+                        <div class="agent-info">
+                            <strong>Aufgabe:</strong> Validiert Konsistenz & Compliance<br>
+                            <strong>Status:</strong> <span id="critic-status">Bereit</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <h2>🔄 Workflow-Prozess</h2>
+            <div class="workflow-steps">
+                <div class="workflow-step" id="step-state-check">
+                    <div class="step-icon">🔍</div>
+                    <div class="step-label">State Check</div>
+                </div>
+                <div class="workflow-step" id="step-manager">
+                    <div class="step-icon">📋</div>
+                    <div class="step-label">Manager</div>
+                </div>
+                <div class="workflow-step" id="step-intel">
+                    <div class="step-icon">🔎</div>
+                    <div class="step-label">Intel</div>
+                </div>
+                <div class="workflow-step" id="step-action">
+                    <div class="step-icon">🎯</div>
+                    <div class="step-label">Action Selection</div>
+                </div>
+                <div class="workflow-step" id="step-generator">
+                    <div class="step-icon">✍️</div>
+                    <div class="step-label">Generator</div>
+                </div>
+                <div class="workflow-step" id="step-critic">
+                    <div class="step-icon">🔍</div>
+                    <div class="step-label">Critic</div>
+                </div>
+                <div class="workflow-step" id="step-update">
+                    <div class="step-icon">💾</div>
+                    <div class="step-label">State Update</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <h2>📊 Aktivitäts-Log</h2>
+            <div class="log-container" id="log-container">
+                <div class="log-entry">
+                    <span class="log-time">[00:00:00]</span>
+                    <span class="log-agent">[System]</span>
+                    <span class="log-message">System initialisiert. Alle Agenten bereit.</span>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="startSimulation()">▶️ Simulation starten</button>
+                <button class="btn btn-secondary" onclick="resetSimulation()">🔄 Zurücksetzen</button>
+                <button class="btn btn-secondary" onclick="clearLog()">🗑️ Log löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Netzwerk-Graph initialisieren
+        let network = null;
+        let nodes = null;
+        let edges = null;
+        let currentStep = 0;
+        let simulationRunning = false;
+
+        // Agenten-Daten
+        const agents = {
+            manager: { name: 'Manager Agent', icon: '📋', color: '#667eea' },
+            intel: { name: 'Intel Agent', icon: '🔎', color: '#f59e0b' },
+            generator: { name: 'Generator Agent', icon: '✍️', color: '#10b981' },
+            critic: { name: 'Critic Agent', icon: '🔍', color: '#ef4444' },
+            neo4j: { name: 'Neo4j Knowledge Graph', icon: '🗄️', color: '#8b5cf6' },
+            chroma: { name: 'ChromaDB Vector DB', icon: '📚', color: '#06b6d4' },
+            llm: { name: 'OpenAI GPT-4o', icon: '🤖', color: '#ec4899' }
+        };
+
+        // Workflow-Schritte
+        const workflowSteps = [
+            { id: 'state-check', name: 'State Check', agent: null },
+            { id: 'manager', name: 'Manager', agent: 'manager' },
+            { id: 'intel', name: 'Intel', agent: 'intel' },
+            { id: 'action', name: 'Action Selection', agent: null },
+            { id: 'generator', name: 'Generator', agent: 'generator' },
+            { id: 'critic', name: 'Critic', agent: 'critic' },
+            { id: 'update', name: 'State Update', agent: null }
+        ];
+
+        function initNetwork() {
+            // Nodes erstellen
+            nodes = new vis.DataSet([
+                { id: 'manager', label: '📋 Manager\nAgent', color: { background: '#667eea', border: '#4c63d2' }, shape: 'box', font: { size: 16, color: 'white' } },
+                { id: 'intel', label: '🔎 Intel\nAgent', color: { background: '#f59e0b', border: '#d97706' }, shape: 'box', font: { size: 16, color: 'white' } },
+                { id: 'generator', label: '✍️ Generator\nAgent', color: { background: '#10b981', border: '#059669' }, shape: 'box', font: { size: 16, color: 'white' } },
+                { id: 'critic', label: '🔍 Critic\nAgent', color: { background: '#ef4444', border: '#dc2626' }, shape: 'box', font: { size: 16, color: 'white' } },
+                { id: 'neo4j', label: '🗄️ Neo4j\nKnowledge Graph', color: { background: '#8b5cf6', border: '#7c3aed' }, shape: 'database', font: { size: 14, color: 'white' } },
+                { id: 'chroma', label: '📚 ChromaDB\nVector DB', color: { background: '#06b6d4', border: '#0891b2' }, shape: 'database', font: { size: 14, color: 'white' } },
+                { id: 'llm', label: '🤖 OpenAI\nGPT-4o', color: { background: '#ec4899', border: '#db2777' }, shape: 'ellipse', font: { size: 14, color: 'white' } }
+            ]);
+
+            // Edges erstellen (Workflow-Verbindungen)
+            edges = new vis.DataSet([
+                { from: 'manager', to: 'llm', arrows: 'to', color: { color: '#667eea' }, width: 2 },
+                { from: 'intel', to: 'chroma', arrows: 'to', color: { color: '#f59e0b' }, width: 2 },
+                { from: 'generator', to: 'llm', arrows: 'to', color: { color: '#10b981' }, width: 2 },
+                { from: 'generator', to: 'neo4j', arrows: 'to', color: { color: '#10b981' }, width: 2 },
+                { from: 'critic', to: 'llm', arrows: 'to', color: { color: '#ef4444' }, width: 2 },
+                { from: 'critic', to: 'neo4j', arrows: 'to', color: { color: '#ef4444' }, width: 2 },
+                { from: 'manager', to: 'generator', arrows: 'to', color: { color: '#94a3b8' }, dashes: true, width: 1 },
+                { from: 'intel', to: 'generator', arrows: 'to', color: { color: '#94a3b8' }, dashes: true, width: 1 },
+                { from: 'generator', to: 'critic', arrows: 'to', color: { color: '#94a3b8' }, dashes: true, width: 1 }
+            ]);
+
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                nodes: {
+                    borderWidth: 3,
+                    shadow: true,
+                    font: { face: 'Inter', size: 14 }
+                },
+                edges: {
+                    smooth: { type: 'continuous', roundness: 0.5 },
+                    shadow: true
+                },
+                layout: {
+                    hierarchical: {
+                        direction: 'UD',
+                        sortMethod: 'directed',
+                        nodeSpacing: 200,
+                        levelSeparation: 150
+                    }
+                },
+                physics: {
+                    enabled: false
+                }
+            };
+
+            const container = document.getElementById('network-container');
+            network = new vis.Network(container, data, options);
+
+            // Hover-Effekte
+            network.on('hoverNode', function(params) {
+                container.style.cursor = 'pointer';
+            });
+
+            network.on('blurNode', function(params) {
+                container.style.cursor = 'default';
+            });
+        }
+
+        function updateAgentStatus(agentId, status) {
+            const card = document.getElementById(`agent-${agentId}`);
+            const statusEl = card.querySelector('.agent-status');
+            const statusText = card.querySelector(`#${agentId}-status`);
+
+            // Entferne alle Status-Klassen
+            card.classList.remove('active');
+            statusEl.classList.remove('status-idle', 'status-active', 'status-completed', 'status-error');
+
+            // Setze neuen Status
+            switch(status) {
+                case 'idle':
+                    statusEl.textContent = 'Idle';
+                    statusEl.classList.add('status-idle');
+                    statusText.textContent = 'Bereit';
+                    break;
+                case 'active':
+                    statusEl.textContent = 'Aktiv';
+                    statusEl.classList.add('status-active');
+                    card.classList.add('active');
+                    statusText.textContent = 'Arbeitet...';
+                    break;
+                case 'completed':
+                    statusEl.textContent = 'Fertig';
+                    statusEl.classList.add('status-completed');
+                    statusText.textContent = 'Abgeschlossen';
+                    break;
+                case 'error':
+                    statusEl.textContent = 'Fehler';
+                    statusEl.classList.add('status-error');
+                    statusText.textContent = 'Fehler aufgetreten';
+                    break;
+            }
+        }
+
+        function updateWorkflowStep(stepIndex) {
+            // Alle Schritte zurücksetzen
+            workflowSteps.forEach((step, idx) => {
+                const stepEl = document.getElementById(`step-${step.id}`);
+                stepEl.classList.remove('active', 'completed');
+            });
+
+            // Aktiven Schritt markieren
+            if (stepIndex < workflowSteps.length) {
+                const stepEl = document.getElementById(`step-${workflowSteps[stepIndex].id}`);
+                stepEl.classList.add('active');
+
+                // Vorherige Schritte als completed markieren
+                for (let i = 0; i < stepIndex; i++) {
+                    const prevStepEl = document.getElementById(`step-${workflowSteps[i].id}`);
+                    prevStepEl.classList.add('completed');
+                }
+
+                // Agenten-Status aktualisieren
+                const step = workflowSteps[stepIndex];
+                if (step.agent) {
+                    updateAgentStatus(step.agent, 'active');
+                }
+            }
+        }
+
+        function addLogEntry(agent, message) {
+            const logContainer = document.getElementById('log-container');
+            const time = new Date().toLocaleTimeString('de-DE');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-agent">[${agent}]</span>
+                <span class="log-message">${message}</span>
+            `;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateStats(iterations, injects, accepted, refines) {
+            document.getElementById('stat-iterations').textContent = iterations;
+            document.getElementById('stat-injects').textContent = injects;
+            document.getElementById('stat-accepted').textContent = accepted;
+            document.getElementById('stat-refines').textContent = refines;
+        }
+
+        async function simulateStep(stepIndex) {
+            if (stepIndex >= workflowSteps.length) {
+                // Workflow abgeschlossen
+                addLogEntry('System', 'Workflow-Iteration abgeschlossen');
+                updateStats(
+                    parseInt(document.getElementById('stat-iterations').textContent) + 1,
+                    parseInt(document.getElementById('stat-injects').textContent) + 1,
+                    parseInt(document.getElementById('stat-accepted').textContent) + 1,
+                    parseInt(document.getElementById('stat-refines').textContent)
+                );
+                
+                // Alle Agenten auf idle setzen
+                ['manager', 'intel', 'generator', 'critic'].forEach(agent => {
+                    updateAgentStatus(agent, 'idle');
+                });
+                
+                // Kurz warten, dann nächste Iteration
+                await sleep(2000);
+                if (simulationRunning) {
+                    currentStep = 0;
+                    simulateStep(0);
+                }
+                return;
+            }
+
+            const step = workflowSteps[stepIndex];
+            updateWorkflowStep(stepIndex);
+
+            // Schritt-spezifische Logik
+            switch(step.id) {
+                case 'state-check':
+                    addLogEntry('System', 'Prüfe Systemzustand in Neo4j...');
+                    await sleep(1000);
+                    addLogEntry('System', 'Systemzustand geladen: 30 Assets');
+                    break;
+                case 'manager':
+                    updateAgentStatus('manager', 'active');
+                    addLogEntry('Manager Agent', 'Erstelle Storyline-Plan...');
+                    await sleep(1500);
+                    addLogEntry('Manager Agent', 'Storyline-Plan erstellt');
+                    updateAgentStatus('manager', 'completed');
+                    break;
+                case 'intel':
+                    updateAgentStatus('intel', 'active');
+                    addLogEntry('Intel Agent', 'Hole relevante MITRE TTPs...');
+                    await sleep(1200);
+                    addLogEntry('Intel Agent', '5 relevante TTPs gefunden');
+                    updateAgentStatus('intel', 'completed');
+                    break;
+                case 'action':
+                    addLogEntry('System', 'Wähle nächste Aktion...');
+                    await sleep(800);
+                    addLogEntry('System', 'Aktion T1595 ausgewählt');
+                    break;
+                case 'generator':
+                    updateAgentStatus('generator', 'active');
+                    addLogEntry('Generator Agent', 'Erstelle Inject...');
+                    await sleep(2000);
+                    addLogEntry('Generator Agent', 'Inject erfolgreich erstellt');
+                    updateAgentStatus('generator', 'completed');
+                    break;
+                case 'critic':
+                    updateAgentStatus('critic', 'active');
+                    addLogEntry('Critic Agent', 'Validiere Inject...');
+                    await sleep(1800);
+                    const isValid = Math.random() > 0.3; // 70% Erfolgsrate
+                    if (isValid) {
+                        addLogEntry('Critic Agent', '✅ Inject validiert');
+                        updateAgentStatus('critic', 'completed');
+                    } else {
+                        addLogEntry('Critic Agent', '❌ Inject nicht valide - Refinement nötig');
+                        updateAgentStatus('critic', 'completed');
+                        document.getElementById('stat-refines').textContent = 
+                            parseInt(document.getElementById('stat-refines').textContent) + 1;
+                        // Gehe zurück zu Generator
+                        await sleep(1000);
+                        currentStep = 4; // Generator
+                        simulateStep(4);
+                        return;
+                    }
+                    break;
+                case 'update':
+                    addLogEntry('System', 'Aktualisiere Systemzustand in Neo4j...');
+                    await sleep(1000);
+                    addLogEntry('System', 'Systemzustand aktualisiert');
+                    break;
+            }
+
+            // Nächster Schritt
+            currentStep = stepIndex + 1;
+            await sleep(500);
+            simulateStep(currentStep);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function startSimulation() {
+            if (simulationRunning) return;
+            simulationRunning = true;
+            addLogEntry('System', 'Simulation gestartet');
+            currentStep = 0;
+            simulateStep(0);
+        }
+
+        function resetSimulation() {
+            simulationRunning = false;
+            currentStep = 0;
+            updateStats(0, 0, 0, 0);
+            ['manager', 'intel', 'generator', 'critic'].forEach(agent => {
+                updateAgentStatus(agent, 'idle');
+            });
+            workflowSteps.forEach((step, idx) => {
+                const stepEl = document.getElementById(`step-${step.id}`);
+                stepEl.classList.remove('active', 'completed');
+            });
+            addLogEntry('System', 'Simulation zurückgesetzt');
+        }
+
+        function clearLog() {
+            const logContainer = document.getElementById('log-container');
+            logContainer.innerHTML = '';
+            addLogEntry('System', 'Log gelöscht');
+        }
+
+        // Initialisierung
+        window.addEventListener('DOMContentLoaded', function() {
+            initNetwork();
+            addLogEntry('System', 'System initialisiert. Alle Agenten bereit.');
+        });
+    </script>
+</body>
+</html>

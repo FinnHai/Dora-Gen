@@ -16,6 +16,11 @@ from typing import Dict, List, Any, Optional
 from io import BytesIO
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Backend Integration
 from neo4j_client import Neo4jClient
@@ -378,7 +383,7 @@ def render_comparison_metrics():
             height=400
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
 
 def render_validation_summary(title: str, result: Optional[Dict[str, Any]]):
@@ -463,12 +468,12 @@ def render_inject_list(injects: List[Dict], evaluations: Dict, mode: str):
         col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
         
         with col_btn1:
-            if st.button("Konsistent", key=f"{mode}_consistent_{inject_id}", use_container_width=True):
+            if st.button("Konsistent", key=f"{mode}_consistent_{inject_id}", width='stretch'):
                 evaluations[inject_id] = {"rating": "consistent", "reason": "", "timestamp": datetime.now().isoformat()}
                 st.rerun()
         
         with col_btn2:
-            if st.button("Halluzination", key=f"{mode}_hallucination_{inject_id}", use_container_width=True):
+            if st.button("Halluzination", key=f"{mode}_hallucination_{inject_id}", width='stretch'):
                 st.session_state[f"{mode}_show_reason_{inject_id}"] = True
         
         # Reason Input für Halluzination
@@ -660,7 +665,7 @@ def main():
         col_gen1, col_gen2 = st.columns(2)
         
         with col_gen1:
-            if st.button("Baseline RAG/LLM generieren", use_container_width=True):
+            if st.button("Baseline RAG/LLM generieren", width='stretch'):
                 with st.spinner("Generiere Szenario mit Baseline RAG/LLM..."):
                     result = generate_with_rack_approach(
                         ScenarioType(scenario_type),
@@ -671,7 +676,7 @@ def main():
                     st.success(f"{len(st.session_state.rack_injects)} Injects generiert")
         
         with col_gen2:
-            if st.button("Agenten-Logik generieren", use_container_width=True):
+            if st.button("Agenten-Logik generieren", width='stretch'):
                 with st.spinner("Generiere Szenario mit agent-basiertem System..."):
                     try:
                         result = generate_with_agent_approach(
@@ -696,7 +701,7 @@ def main():
                 data=csv_data,
                 file_name=f"thesis_evaluation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
         
         st.markdown("---")

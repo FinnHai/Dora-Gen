@@ -1,0 +1,7 @@
+scenario_id,legacy_injects,legacy_errors,legacy_warnings,legacy_hallucinations,legacy_duration_seconds,legacy_hallucinated_assets,thesis_injects,thesis_errors,thesis_warnings,thesis_refines,thesis_hallucinations,thesis_duration_seconds,thesis_hallucinated_assets,hallucinations_prevented,errors_missed_by_legacy,duration_difference_seconds
+SCEN-000,18,0,0,0,333.148495,[],18,0,0,0,0,617.457182,[],0,0,284.30868699999996
+SCEN-001,17,0,0,0,328.141037,[],18,0,0,0,0,547.964071,[],0,0,219.823034
+SCEN-002,17,0,0,0,353.633733,[],18,0,0,0,0,735.790671,[],0,0,382.15693799999997
+SCEN-003,18,0,0,0,323.086504,[],18,0,0,0,0,826.130281,[],0,0,503.043777
+SCEN-004,18,0,0,0,360.070948,[],18,0,0,0,0,540.930575,[],0,0,180.859627
+SCEN-005,18,0,0,1,389.023312,"[{'inject_id': 'INJ-017', 'asset': 'SRV-001', 'phase': <CrisisPhase.CONTAINMENT: 'CONTAINMENT'>}]",17,0,0,0,0,521.407854,[],1,1,132.38454200000007

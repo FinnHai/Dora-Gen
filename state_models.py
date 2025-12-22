@@ -102,8 +102,8 @@ class Inject(BaseModel):
     )
     time_offset: str = Field(
         ...,
-        description="Zeitversatz vom Szenario-Start (z.B. T+02:00)",
-        pattern=r"^T\+(\d{2}):(\d{2})$"
+        description="Zeitversatz vom Szenario-Start (z.B. T+02:00 oder T+00:02:30)",
+        pattern=r"^T\+(\d{2}):(\d{2})(?::(\d{2}))?$"
     )
     phase: CrisisPhase = Field(
         ...,

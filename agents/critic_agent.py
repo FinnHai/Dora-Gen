@@ -49,12 +49,9 @@ class CriticAgent:
         inject: Inject,
         previous_injects: List[Inject],
         current_phase: CrisisPhase,
-        system_state: Dict[str, Any]
+        system_state: Dict[str, Any],
+        mode: str = 'thesis'
     ) -> ValidationResult:
-        print(f"🔍 [Critic] Validiere Inject {inject.inject_id}")
-        print(f"   Phase: {current_phase.value} → {inject.phase.value}")
-        print(f"   Assets: {inject.technical_metadata.affected_assets}")
-        print(f"   MITRE: {inject.technical_metadata.mitre_id}")
         """
         Validiert einen Inject mit mehrschichtiger Validierung.
         
@@ -65,10 +62,28 @@ class CriticAgent:
             previous_injects: Liste vorheriger Injects für Konsistenz
             current_phase: Aktuelle Phase
             system_state: Aktueller Systemzustand
+            mode: 'legacy' = Skip Validation (simuliert altes System), 'thesis' = Full Validation (Default)
         
         Returns:
             ValidationResult mit Validierungs-Ergebnissen
         """
+        # LEGACY MODE: Skip Validation komplett (simuliert altes System ohne Logic Guard)
+        if mode == 'legacy':
+            print(f"[Critic] Legacy Mode: Skipping validation for {inject.inject_id}")
+            return ValidationResult(
+                is_valid=True,
+                logical_consistency=True,
+                dora_compliance=True,
+                causal_validity=True,
+                errors=[],
+                warnings=[]
+            )
+        
+        print(f"[Critic] Validiere Inject {inject.inject_id}")
+        print(f"   Phase: {current_phase.value} → {inject.phase.value}")
+        print(f"   Assets: {inject.technical_metadata.affected_assets}")
+        print(f"   MITRE: {inject.technical_metadata.mitre_id}")
+        
         errors = []
         warnings = []
         

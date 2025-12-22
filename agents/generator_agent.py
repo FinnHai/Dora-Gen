@@ -58,7 +58,8 @@ class GeneratorAgent:
         selected_ttp: Dict[str, Any],
         system_state: Dict[str, Any],
         previous_injects: list,
-        validation_feedback: Optional[Dict[str, Any]] = None
+        validation_feedback: Optional[Dict[str, Any]] = None,
+        user_feedback: Optional[str] = None
     ) -> Inject:
         """
         Generiert einen neuen Inject.
@@ -135,7 +136,30 @@ ASSET-VALIDIERUNG (MUSS BEACHTET WERDEN):
 1. Prüfe die Liste "VERFÜGBARE ASSET-IDs" im Systemzustand
 2. Verwende NUR Asset-IDs aus dieser Liste
 3. Wenn Liste leer oder nur INJ-/SCEN-IDs: Verwende SRV-001, SRV-002
-4. Kopiere Asset-IDs EXAKT (keine Variationen!)"""
+4. Kopiere Asset-IDs EXAKT (keine Variationen!)
+
+### DYNAMIC TIME MANAGEMENT RULES ###
+You MUST calculate the `time_offset` based on the NARRATIVE CONTEXT, not just add 30 minutes.
+
+**CRITICAL:** The time_offset must reflect the REALISTIC PACE of events:
+- **High Intensity Events (Ransomware Encryption, Active Exploits, Lateral Movement):** Short jumps (e.g., +5m, +15m, +30m).
+- **Investigation Phases (SOC Analysis, Forensics, Log Review):** Medium jumps (e.g., +2h, +4h, +6h).
+- **Stealth/APT Phases (Dormant Persistence, Data Exfiltration):** Long jumps (e.g., +12h, +1d, +3d).
+- **Shift Changes/Weekends:** You can jump multiple days if realistic (e.g., +2d, +5d).
+
+**Format:** Always use `T+DD:HH:MM` format:
+- Minutes: `T+00:00:15` (15 minutes)
+- Hours: `T+00:02:00` (2 hours)
+- Days: `T+01:00:00` (1 day)
+- Mixed: `T+00:04:30` (4 hours 30 minutes)
+
+**Examples:**
+- Active ransomware encryption → `T+00:00:05` (5 minutes later)
+- SOC investigation → `T+00:03:00` (3 hours later)
+- Stealth data exfiltration → `T+01:00:00` (1 day later)
+- Weekend gap → `T+02:00:00` (2 days later)
+
+**IMPORTANT:** The time_offset MUST be chronologically AFTER the last inject's time_offset. Check previous_injects to ensure consistency."""
         
         if is_refine:
             system_prompt += """
@@ -155,7 +179,7 @@ WICHTIG: Behebe ALLE genannten Fehler. Verwende dieselbe Inject-ID und denselben
 
 Kontext:
 - Inject ID: {inject_id}
-- Zeitversatz: {time_offset}
+- Vorgeschlagener Zeitversatz (NUR VORSCHLAG - berechne neu basierend auf Kontext!): {time_offset}
 - Phase: {phase}
 - TTP: {ttp_name} ({ttp_id})
 
@@ -167,6 +191,8 @@ Storyline-Plan:
 
 ⚠️ KRITISCH - VORHERIGE INJECTS (für Konsistenz - verwende dieselben Asset-Namen!):
 {previous_injects}
+
+{user_feedback_section}
 
 {validation_feedback_section}
 
@@ -181,6 +207,7 @@ Storyline-Plan:
 
 Erstelle einen realistischen Inject im folgenden JSON-Format:
 {{
+    "time_offset": "<Berechne basierend auf narrativem Kontext! Siehe Dynamic Time Management Rules oben. Format: T+DD:HH:MM>",
     "source": "<Quelle, z.B. 'Red Team / Attacker' oder 'Blue Team / SOC'>",
     "target": "<Empfänger, z.B. 'Blue Team / SOC' oder 'Management'>",
     "modality": "<SIEM Alert|Email|Phone Call|Physical Event|News Report|Internal Report>",
@@ -195,6 +222,16 @@ Erstelle einen realistischen Inject im folgenden JSON-Format:
     }},
     "business_impact": "<Beschreibung der geschäftlichen Auswirkung, optional>"
 }}
+
+⚠️ WICHTIG - TIME_OFFSET BERECHNUNG:
+- Der bereitgestellte Zeitversatz "{time_offset}" ist nur ein VORSCHLAG.
+- Du MUSST den time_offset basierend auf dem narrativen Kontext neu berechnen!
+- Prüfe die vorherigen Injects: Was ist der letzte time_offset?
+- Berechne einen REALISTISCHEN Sprung basierend auf:
+  * Art des Events (High Intensity → kurz, Investigation → mittel, Stealth → lang)
+  * Phase des Szenarios (frühe Phasen → kürzer, späte Phasen → länger)
+  * User Feedback (wenn vorhanden: Wie lange dauert die Response Action?)
+- Stelle sicher, dass der neue time_offset CHRONOLOGISCH NACH dem letzten liegt!
 
 REGULATORISCHE ASPEKTE für Phase {phase} (optional, nicht blockierend):
 - Wenn Phase INITIAL_INCIDENT oder SUSPICIOUS_ACTIVITY: Content KÖNNTE SOC-Aktivitäten, Incident Response oder Security Operations erwähnen
@@ -216,6 +253,24 @@ Weitere Anforderungen:
         system_state_str = self._format_system_state(system_state)
         previous_injects_str = self._format_previous_injects(previous_injects)
         manager_plan_str = self._format_manager_plan(manager_plan)
+        
+        # User Feedback Formatierung (Human-in-the-Loop)
+        user_feedback_section = ""
+        if user_feedback and user_feedback.strip():
+            user_feedback_section = f"""
+### HUMAN RESPONSE TO LAST INJECT:
+The Incident Response Team performed the following action: "{user_feedback}"
+
+INSTRUCTION:
+The next Inject MUST reflect the consequences of this action.
+- If they mitigated the threat (e.g., isolated server, blocked IP, shutdown service) → Show recovery or a new, different attack vector.
+- If they ignored it or took insufficient action → Escalate the crisis drastically.
+- If they took defensive action → Show how the attacker adapts or how the system responds.
+- Be realistic: Actions have consequences. If SRV-001 was shut down, it cannot be attacked in the next inject, but services depending on it may be affected.
+
+CRITICAL: The inject content must logically follow from the response action. Do not ignore the human action."""
+        else:
+            user_feedback_section = ""
         
         # Validation Feedback Formatierung
         validation_feedback_section = ""
@@ -279,6 +334,7 @@ Weitere Anforderungen:
                     "manager_plan": manager_plan_str,
                     "system_state": system_state_str,
                     "previous_injects": previous_injects_str,
+                    "user_feedback_section": user_feedback_section,
                     "validation_feedback_section": validation_feedback_section,
                     "validation_errors": "\n".join(validation_feedback.get("errors", [])) if validation_feedback else ""
                 })
@@ -324,10 +380,25 @@ Weitere Anforderungen:
                     severity=inject_data.get("technical_metadata", {}).get("severity", "Medium")
                 )
                 
+                # Verwende Generator-generierten time_offset falls vorhanden, sonst Fallback
+                generated_time_offset = inject_data.get("time_offset")
+                if generated_time_offset and generated_time_offset.strip():
+                    # Validiere Format (akzeptiert sowohl T+DD:HH:MM als auch T+DD:HH)
+                    if re.match(r'^T\+\d{2}:\d{2}(?::\d{2})?$', generated_time_offset):
+                        final_time_offset = generated_time_offset
+                        print(f"✅ [Generator] Verwende Generator-generierten time_offset: {final_time_offset}")
+                    else:
+                        print(f"⚠️  [Generator] Ungültiges time_offset Format '{generated_time_offset}', verwende Fallback")
+                        final_time_offset = time_offset
+                else:
+                    # Fallback auf übergebenen time_offset
+                    final_time_offset = time_offset
+                    print(f"ℹ️  [Generator] Kein Generator-generierter time_offset, verwende Fallback: {final_time_offset}")
+                
                 # Erstelle Inject
                 inject = Inject(
                     inject_id=inject_id,
-                    time_offset=time_offset,
+                    time_offset=final_time_offset,
                     phase=phase,
                     source=inject_data.get("source", "Red Team / Attacker"),
                     target=inject_data.get("target", "Blue Team / SOC"),
@@ -429,16 +500,32 @@ Weitere Anforderungen:
         return result
     
     def _format_previous_injects(self, previous_injects: list) -> str:
-        """Formatiert vorherige Injects für Konsistenz."""
+        """Formatiert vorherige Injects für Konsistenz (inklusive time_offsets für chronologische Berechnung)."""
         if not previous_injects:
-            return "Keine vorherigen Injects"
+            return "Keine vorherigen Injects - Starte bei T+00:00:00"
         
         lines = []
-        for inj in previous_injects[-3:]:  # Nur letzte 3
+        lines.append("⚠️ WICHTIG - CHRONOLOGISCHE REIHENFOLGE:")
+        for inj in previous_injects[-5:]:  # Letzte 5 für besseren Kontext
             if isinstance(inj, Inject):
-                lines.append(f"- {inj.inject_id} ({inj.time_offset}): {inj.content[:50]}...")
+                lines.append(f"- {inj.inject_id} | Time: {inj.time_offset} | Phase: {inj.phase.value} | Content: {inj.content[:60]}...")
             elif isinstance(inj, dict):
-                lines.append(f"- {inj.get('inject_id', 'Unknown')}: {inj.get('content', '')[:50]}...")
+                inj_time = inj.get('time_offset', 'Unknown')
+                inj_phase = inj.get('phase', 'Unknown')
+                inj_content = inj.get('content', '')[:60] if isinstance(inj.get('content'), str) else str(inj.get('content', ''))[:60]
+                lines.append(f"- {inj.get('inject_id', 'Unknown')} | Time: {inj_time} | Phase: {inj_phase} | Content: {inj_content}...")
+        
+        # Extrahiere letzten time_offset für Berechnung
+        last_inject = previous_injects[-1]
+        if isinstance(last_inject, Inject):
+            last_time = last_inject.time_offset
+        elif isinstance(last_inject, dict):
+            last_time = last_inject.get('time_offset', 'T+00:00:00')
+        else:
+            last_time = 'T+00:00:00'
+        
+        lines.append(f"\n📅 LETZTER TIME_OFFSET: {last_time}")
+        lines.append("💡 Berechne den neuen time_offset CHRONOLOGISCH NACH diesem Zeitpunkt!")
         
         return "\n".join(lines)
     
