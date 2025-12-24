@@ -12,6 +12,7 @@ import threading
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pathlib import Path
+from utils.json_encoder import DateTimeEncoder
 
 
 class ForensicLogger:
@@ -85,7 +86,8 @@ class ForensicLogger:
         inject_id: str,
         validation_result: Any,
         iteration: int,
-        refine_count: int = 0
+        refine_count: int = 0,
+        metrics: Optional[Dict[str, Any]] = None
     ):
         """
         Loggt CRITIC Validierungsergebnis.
@@ -96,6 +98,7 @@ class ForensicLogger:
             validation_result: ValidationResult-Objekt
             iteration: Aktuelle Iteration
             refine_count: Anzahl der Refine-Versuche
+            metrics: Optional - Metriken-Dictionary mit overall_quality_score etc.
         """
         try:
             validation_dict = {
@@ -106,6 +109,10 @@ class ForensicLogger:
                 "errors": validation_result.errors,
                 "warnings": validation_result.warnings
             }
+            
+            # Füge Metriken hinzu, falls verfügbar
+            if metrics:
+                validation_dict["metrics"] = metrics
             
             log_entry = {
                 "timestamp": datetime.now().isoformat(),
@@ -229,7 +236,7 @@ class ForensicLogger:
         with self.lock:
             try:
                 with open(self.log_file, 'a', encoding='utf-8') as f:
-                    json_line = json.dumps(log_entry, ensure_ascii=False)
+                    json_line = json.dumps(log_entry, ensure_ascii=False, cls=DateTimeEncoder)
                     f.write(json_line + '\n')
                     f.flush()  # Sofortiges Schreiben für Debugging
             except Exception as e:

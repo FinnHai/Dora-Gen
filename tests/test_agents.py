@@ -7,6 +7,7 @@ Testet die Funktionalität von Manager, Generator, Critic und Intel Agents.
 import pytest
 import sys
 from pathlib import Path
+from unittest.mock import Mock, patch, MagicMock
 
 # Füge Projekt-Root zum Python-Path hinzu
 project_root = Path(__file__).parent.parent
@@ -57,7 +58,8 @@ class TestManagerAgent:
         assert manager is not None
         assert manager.llm is not None
     
-    def test_create_storyline_structure(self, monkeypatch):
+    @patch('utils.retry_handler.safe_llm_call')
+    def test_create_storyline_structure(self, mock_safe_llm_call):
         """Testet Storyline-Struktur."""
         manager = ManagerAgent()
         
@@ -65,10 +67,11 @@ class TestManagerAgent:
         class MockResponse:
             content = '{"next_phase": "SUSPICIOUS_ACTIVITY", "narrative": "Test", "key_events": [], "affected_assets": [], "business_impact": ""}'
         
-        def mock_invoke(*args, **kwargs):
+        # Mock die safe_llm_call Funktion, die intern verwendet wird
+        def mock_llm_call(func, *args, **kwargs):
             return MockResponse()
         
-        monkeypatch.setattr(manager.llm, "invoke", mock_invoke)
+        mock_safe_llm_call.side_effect = mock_llm_call
         
         result = manager.create_storyline(
             scenario_type=ScenarioType.RANSOMWARE_DOUBLE_EXTORTION,

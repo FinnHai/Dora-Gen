@@ -1,11 +1,20 @@
 """
-Critic Agent - Validiert Injects auf Logik, Konsistenz und Regulatorik.
+Critic Agent - Wissenschaftlich basierte Validierung von Injects.
 
 Verantwortlich für:
-- Logische Konsistenz-Prüfung (Widerspruchsfreiheit zur Historie)
-- Generische Regulatorik-Prüfung (Business Continuity, Incident Response)
+- Evidenzbasierte Validierung mit quantifizierbaren Metriken
+- Statistische Signifikanz-Tests
+- Multi-Layer Validierung (symbolisch → LLM)
+- Compliance-Validierung mit variablen Standards
 - Causal Validity (MITRE ATT&CK Graph Konformität)
-- Refine-Loop: Verbesserungsvorschläge
+- Refine-Loop mit wissenschaftlichen Verbesserungsvorschlägen
+
+Wissenschaftliche Methoden:
+- Quantifizierbare Metriken (0.0-1.0 Scores)
+- Konfidenz-Intervalle (95% CI)
+- Statistische Signifikanz-Tests (p-value)
+- Reproduzierbare Validierung
+- Evidence-based Entscheidungen
 """
 
 from typing import Dict, Any, List, Optional
@@ -13,11 +22,63 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from state_models import Inject, ValidationResult, CrisisPhase
 from workflows.fsm import CrisisFSM
+from agents.critic_metrics import ScientificValidator, ValidationMetrics
+from utils.json_encoder import DateTimeEncoder
 import os
 from dotenv import load_dotenv
 from datetime import datetime
 import json
 from pathlib import Path
+
+# Optional: Compliance-Framework Import (für variable Compliance-Standards)
+COMPLIANCE_AVAILABLE = False
+ComplianceStandard = None
+DORAComplianceFramework = None
+NISTComplianceFramework = None
+ISO27001ComplianceFramework = None
+
+try:
+    import sys
+    import importlib.util
+    from pathlib import Path
+    # Ensure parent directory is in path
+    parent_dir = Path(__file__).parent.parent
+    if str(parent_dir) not in sys.path:
+        sys.path.insert(0, str(parent_dir))
+    
+    # Handle case-insensitive filesystem (macOS): Import Compliance as compliance
+    # Use importlib to load Compliance directory as 'compliance' module
+    compliance_dir = parent_dir / "Compliance"
+    if compliance_dir.exists() and compliance_dir.is_dir():
+        # Load the module using importlib
+        spec = importlib.util.spec_from_file_location(
+            "compliance", 
+            compliance_dir / "__init__.py",
+            submodule_search_locations=[str(compliance_dir)]
+        )
+        if spec and spec.loader:
+            compliance_module = importlib.util.module_from_spec(spec)
+            sys.modules["compliance"] = compliance_module
+            spec.loader.exec_module(compliance_module)
+            
+            # Now import from the loaded module
+            from compliance.base import ComplianceStandard
+            from compliance.dora import DORAComplianceFramework
+            from compliance.nist import NISTComplianceFramework
+            from compliance.iso27001 import ISO27001ComplianceFramework
+            COMPLIANCE_AVAILABLE = True
+        else:
+            COMPLIANCE_AVAILABLE = False
+    else:
+        # Fallback: try normal import (in case directory is already lowercase)
+        from compliance.base import ComplianceStandard
+        from compliance.dora import DORAComplianceFramework
+        from compliance.nist import NISTComplianceFramework
+        from compliance.iso27001 import ISO27001ComplianceFramework
+        COMPLIANCE_AVAILABLE = True
+except (ImportError, ModuleNotFoundError, Exception) as e:
+    # Fallback für Rückwärtskompatibilität - funktioniert auch ohne compliance Modul
+    COMPLIANCE_AVAILABLE = False
 
 load_dotenv()
 
@@ -30,19 +91,45 @@ class CriticAgent:
     Führt Reflect-Refine Loop durch, um Injects zu verbessern.
     """
     
-    def __init__(self, model_name: str = "gpt-4o", temperature: float = 0.3):
+    def __init__(
+        self,
+        model_name: str = "gpt-4o",
+        temperature: float = 0.3,
+        compliance_standards: Optional[List[ComplianceStandard]] = None
+    ):
         """
         Initialisiert den Critic Agent.
         
         Args:
             model_name: OpenAI Modell-Name
             temperature: Temperature (niedrig für konsistente Validierung)
+            compliance_standards: Liste von Compliance-Standards (Standard: [DORA])
         """
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
             api_key=os.getenv("OPENAI_API_KEY")
         )
+        
+        # Initialisiere Compliance-Frameworks
+        self.compliance_frameworks: Dict[str, Any] = {}
+        if COMPLIANCE_AVAILABLE and ComplianceStandard is not None:
+            if compliance_standards is None:
+                compliance_standards = [ComplianceStandard.DORA]
+            
+            for standard in compliance_standards:
+                if standard == ComplianceStandard.DORA and DORAComplianceFramework is not None:
+                    self.compliance_frameworks[standard] = DORAComplianceFramework()
+                elif standard == ComplianceStandard.NIST and NISTComplianceFramework is not None:
+                    self.compliance_frameworks[standard] = NISTComplianceFramework()
+                elif standard == ComplianceStandard.ISO27001 and ISO27001ComplianceFramework is not None:
+                    self.compliance_frameworks[standard] = ISO27001ComplianceFramework()
+        
+        # Initialisiere wissenschaftlichen Validator
+        self.scientific_validator = ScientificValidator()
+        
+        # Metriken-Historie für statistische Analysen
+        self.validation_history: List[Dict[str, float]] = []
     
     def validate_inject(
         self,
@@ -50,7 +137,8 @@ class CriticAgent:
         previous_injects: List[Inject],
         current_phase: CrisisPhase,
         system_state: Dict[str, Any],
-        mode: str = 'thesis'
+        mode: str = 'thesis',
+        compliance_standards: Optional[List[ComplianceStandard]] = None
     ) -> ValidationResult:
         """
         Validiert einen Inject mit mehrschichtiger Validierung.
@@ -261,7 +349,44 @@ class CriticAgent:
         print(f"🔧 [Critic] Phase 2: LLM-basierte Validierung (alle symbolischen Checks OK)")
         # Speichere formatierten System-State für Audit-Log
         formatted_system_state_str = self._format_system_state(system_state)
-        llm_validation = self._llm_validate(inject, previous_injects, current_phase, system_state, formatted_system_state_str)
+        
+        # Compliance-Validierung mit variablen Standards
+        compliance_results: Dict[str, Any] = {}
+        if COMPLIANCE_AVAILABLE and self.compliance_frameworks:
+            if compliance_standards is None:
+                compliance_standards = list(self.compliance_frameworks.keys())
+            
+            for standard in compliance_standards:
+                if standard in self.compliance_frameworks:
+                    framework = self.compliance_frameworks[standard]
+                    try:
+                        compliance_result = framework.validate_inject(
+                            inject_content=inject.content,
+                            inject_phase=current_phase.value,
+                            inject_metadata={
+                                "mitre_id": inject.technical_metadata.mitre_id,
+                                "affected_assets": inject.technical_metadata.affected_assets,
+                                "severity": inject.technical_metadata.severity
+                            },
+                            context={
+                                "previous_injects": [
+                                    {
+                                        "inject_id": inj.inject_id,
+                                        "content": inj.content,
+                                        "phase": inj.phase.value
+                                    }
+                                    for inj in previous_injects
+                                ]
+                            }
+                        )
+                        if ComplianceStandard is not None:
+                            compliance_results[standard.value] = compliance_result
+                        else:
+                            compliance_results[str(standard)] = compliance_result
+                    except Exception as e:
+                        print(f"⚠️  Fehler bei Compliance-Validierung ({standard}): {e}")
+        
+        llm_validation = self._llm_validate(inject, previous_injects, current_phase, system_state, formatted_system_state_str, compliance_results)
         print(f"   LLM-Ergebnis: logical_consistency={llm_validation['logical_consistency']}, "
               f"regulatory_compliance={llm_validation.get('regulatory_compliance', llm_validation.get('dora_compliance', True))}, "
               f"causal_validity={llm_validation['causal_validity']}")
@@ -270,8 +395,15 @@ class CriticAgent:
         errors.extend(llm_validation.get("errors", []) or [])
         warnings.extend(llm_validation.get("warnings", []) or [])
         
+        # Füge Compliance-Warnungen hinzu
+        for standard, result in compliance_results.items():
+            if not result.is_compliant:
+                warnings.append(f"{standard} Compliance: {', '.join(result.requirements_missing)} fehlen")
+            if result.warnings:
+                warnings.extend([f"{standard}: {w}" for w in result.warnings])
+        
         # Finale Validierung
-        # DORA-Compliance ist weniger kritisch (nur Warnung, kein Blocking-Fehler)
+        # Compliance ist weniger kritisch (nur Warnung, kein Blocking-Fehler)
         # Causal Validity: Nur blockieren wenn wirklich unmöglich, sonst Warnung
         critical_errors = (
             not pydantic_valid
@@ -327,6 +459,105 @@ class CriticAgent:
         print(f"   Fehler: {len(errors)}, Warnungen: {len(warnings)}")
         if errors:
             print(f"   Fehler-Details: {errors[:3]}")  # Erste 3 Fehler
+        
+        # ===== WISSENSCHAFTLICHE METRIKEN-BERECHNUNG =====
+        # Berechne quantifizierbare Metriken für evidenzbasierte Entscheidung
+        print(f"🔬 [Critic] Berechne wissenschaftliche Metriken...")
+        
+        # 1. Logische Konsistenz-Score
+        logical_score = self.scientific_validator.calculate_logical_consistency_score(
+            inject=inject,
+            previous_injects=previous_injects,
+            system_state=system_state
+        )
+        
+        # 2. Kausale Validität-Score
+        causal_score = self.scientific_validator.calculate_causal_validity_score(
+            inject=inject,
+            current_phase=current_phase,
+            mitre_id=inject.technical_metadata.mitre_id
+        )
+        
+        # 3. Compliance-Score
+        compliance_score = self.scientific_validator.calculate_compliance_score(
+            compliance_results=compliance_results
+        )
+        
+        # 4. Temporale Konsistenz-Score
+        temporal_score = self.scientific_validator.calculate_temporal_consistency_score(
+            inject=inject,
+            previous_injects=previous_injects
+        ) if previous_injects else 1.0
+        
+        # 5. Asset-Konsistenz-Score
+        asset_score = self.scientific_validator._check_asset_name_consistency(
+            inject=inject,
+            previous_injects=previous_injects
+        )
+        
+        # Erstelle Metriken-Objekt
+        metrics = ValidationMetrics(
+            logical_consistency_score=logical_score,
+            causal_validity_score=causal_score,
+            compliance_score=compliance_score,
+            temporal_consistency_score=temporal_score,
+            asset_consistency_score=asset_score,
+            sample_size=len(previous_injects),
+            validation_method="multi_layer"
+        )
+        
+        # Berechne Gesamt-Qualitäts-Score
+        metrics.overall_quality_score = self.scientific_validator.calculate_overall_quality_score(metrics)
+        
+        # Berechne Konfidenz-Intervalle
+        if len(previous_injects) >= 2:
+            metrics.confidence_interval = self.scientific_validator.calculate_confidence_interval(
+                score=metrics.overall_quality_score,
+                sample_size=len(previous_injects)
+            )
+        
+        # Statistische Signifikanz-Test
+        if len(self.validation_history) >= 2:
+            historical_scores = [h["overall_quality_score"] for h in self.validation_history[-10:]]
+            significance_test = self.scientific_validator.statistical_significance_test(
+                current_score=metrics.overall_quality_score,
+                historical_scores=historical_scores
+            )
+            metrics.p_value = significance_test.get("p_value")
+            metrics.statistical_significance = significance_test.get("significant", False)
+        
+        # Speichere Metriken in Historie
+        self.validation_history.append({
+            "inject_id": inject.inject_id,
+            "overall_quality_score": metrics.overall_quality_score,
+            "logical_consistency_score": logical_score,
+            "causal_validity_score": causal_score,
+            "compliance_score": compliance_score
+        })
+        
+        # Begrenze Historie auf letzte 100 Einträge
+        if len(self.validation_history) > 100:
+            self.validation_history = self.validation_history[-100:]
+        
+        print(f"   📊 Metriken: Logical={logical_score:.2f}, Causal={causal_score:.2f}, "
+              f"Compliance={compliance_score:.2f}, Overall={metrics.overall_quality_score:.2f}")
+        
+        # Wissenschaftlich basierte Entscheidung: Verwende Overall Quality Score
+        # Anpassung der Validierung basierend auf Metriken
+        if metrics.overall_quality_score < self.scientific_validator.thresholds["critical"]:
+            # Kritischer Score: Zusätzliche Fehler hinzufügen
+            if not any("Qualität" in e for e in errors):
+                errors.append(f"Qualitäts-Score zu niedrig: {metrics.overall_quality_score:.2f} < {self.scientific_validator.thresholds['critical']:.2f}")
+        elif metrics.overall_quality_score < self.scientific_validator.thresholds["warning"]:
+            # Warnung bei mittlerem Score
+            if not any("Qualität" in w for w in warnings):
+                warnings.append(f"Qualitäts-Score könnte verbessert werden: {metrics.overall_quality_score:.2f}")
+        
+        # Compliance-Ergebnisse zusammenfassen
+        overall_compliance = all(
+            getattr(result, 'is_compliant', True)
+            for result in compliance_results.values()
+        ) if compliance_results else True
 
         # ===== DEEP TRUTH LOGGING =====
         # Logge die vollständige Entscheidung für Debugging
@@ -347,6 +578,14 @@ class CriticAgent:
                 "temporal_valid": temporal_result["valid"],
                 "logical_consistency": llm_validation["logical_consistency"],
                 "causal_validity": llm_validation["causal_validity"],
+                "compliance_results": {
+                    standard: {
+                        "is_compliant": result.is_compliant,
+                        "requirements_met": result.requirements_met,
+                        "requirements_missing": result.requirements_missing
+                    }
+                    for standard, result in compliance_results.items()
+                } if compliance_results else None,
                 "causal_blocking": causal_blocking
             },
             formatted_system_state_str=formatted_system_state_str if 'formatted_system_state_str' in locals() else None
@@ -360,10 +599,14 @@ class CriticAgent:
                 and temporal_result["valid"]
                 and llm_validation["logical_consistency"]
             ),
-            dora_compliance=llm_validation.get("regulatory_compliance", llm_validation.get("dora_compliance", True)),  # Rückwärtskompatibilität
+            dora_compliance=overall_compliance,  # Rückwärtskompatibilität
             causal_validity=llm_validation["causal_validity"],
             errors=errors,
-            warnings=warnings
+            warnings=warnings,
+            compliance_results={
+                standard: result.dict()
+                for standard, result in compliance_results.items()
+            } if compliance_results else None
         )
     
     def _validate_phase_transition(
@@ -672,9 +915,10 @@ class CriticAgent:
         previous_injects: List[Inject],
         current_phase: CrisisPhase,
         system_state: Dict[str, Any],
-        formatted_system_state_str: Optional[str] = None
+        formatted_system_state_str: Optional[str] = None,
+        compliance_results: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """LLM-basierte Validierung mit generischer Regulatorik-Prüfung."""
+        """LLM-basierte Validierung mit variablen Compliance-Standards."""
         
         # Generische Regulatorik-Check (vor LLM-Call)
         regulatory_check = self._check_regulatory_compliance(inject, current_phase)
@@ -1136,11 +1380,11 @@ Antworte STRICT JSON (nur JSON, keine zusätzlichen Erklärungen außerhalb des 
 ### 1. The Ground Truth (What was in the DB?)
 *Crucial: Dump the exact JSON inputs the Critic received.*
 
-- **Active Assets in State:** `{json.dumps(active_assets, indent=2, ensure_ascii=False)}`
+- **Active Assets in State:** `{json.dumps(active_assets, indent=2, ensure_ascii=False, cls=DateTimeEncoder)}`
 - **Current Phase:** `{current_phase.value}`
 - **System State (Full Raw):**
 ```json
-{json.dumps(system_state, indent=2, ensure_ascii=False, default=str)}
+{json.dumps(system_state, indent=2, ensure_ascii=False, cls=DateTimeEncoder)}
 ```
 - **System State (Formatted - wie an LLM gesendet):**
 ```
@@ -1148,7 +1392,7 @@ Antworte STRICT JSON (nur JSON, keine zusätzlichen Erklärungen außerhalb des 
 ```
 - **Previous Injects (Full History):**
 ```json
-{json.dumps(previous_injects_json, indent=2, ensure_ascii=False)}
+{json.dumps(previous_injects_json, indent=2, ensure_ascii=False, cls=DateTimeEncoder)}
 ```
 - **Defined Rules:**
   - **FSM Transition Rules:** Valid transitions from `{current_phase.value}` → `{allowed_transitions_str}`
@@ -1159,7 +1403,7 @@ Antworte STRICT JSON (nur JSON, keine zusätzlichen Erklärungen außerhalb des 
 
 ### 2. The Generator's Draft
 ```json
-{json.dumps(inject_json, indent=2, ensure_ascii=False)}
+{json.dumps(inject_json, indent=2, ensure_ascii=False, cls=DateTimeEncoder)}
 ```
 
 ### 3. The Critic's Reasoning (Raw LLM Output)
@@ -1171,8 +1415,8 @@ Antworte STRICT JSON (nur JSON, keine zusätzlichen Erklärungen außerhalb des 
 
 ### 4. The Verdict
 - **Decision:** {decision}
-- **Detected Errors:** {json.dumps(final_result.get("errors", []), indent=2, ensure_ascii=False)}
-- **Warnings:** {json.dumps(final_result.get("warnings", []), indent=2, ensure_ascii=False)}
+- **Detected Errors:** {json.dumps(final_result.get("errors", []), indent=2, ensure_ascii=False, cls=DateTimeEncoder)}
+- **Warnings:** {json.dumps(final_result.get("warnings", []), indent=2, ensure_ascii=False, cls=DateTimeEncoder)}
 - **Validation Details:**
   - Pydantic Valid: `{final_result.get("pydantic_valid", "N/A")}`
   - FSM Valid: `{final_result.get("fsm_valid", "N/A")}`

@@ -2,60 +2,115 @@
 
 ## 🚀 In 5 Minuten zum ersten Szenario
 
-### Schritt 1: Dependencies installieren
+> 📖 **Für eine vollständige Setup-Anleitung:** Siehe [README.md](../../README.md#-setup-anleitung)
+
+### Automatisches Setup (Empfohlen)
+
+**macOS/Linux:**
+```bash
+./setup.sh
+```
+
+**Windows:**
+```bash
+setup.bat
+```
+
+Das Setup-Skript installiert automatisch alle Dependencies und konfiguriert die Umgebung.
+
+---
+
+### Manuelles Setup
+
+#### Schritt 1: Dependencies installieren
 
 ```bash
 # Virtual Environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install
 pip install -r requirements.txt
 ```
 
-### Schritt 2: Umgebung konfigurieren
-
-Erstelle `.env` Datei:
-
-```env
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your_password
-OPENAI_API_KEY=your_api_key
-```
-
-### Schritt 3: Neo4j starten
+#### Schritt 2: Umgebung konfigurieren
 
 ```bash
+# Kopiere .env.example zu .env
+cp .env.example .env
+
+# Bearbeite .env und füge deinen OPENAI_API_KEY ein
+nano .env  # oder code .env
+```
+
+**Wichtig:** Füge deinen OpenAI API Key in `.env` ein:
+```env
+OPENAI_API_KEY=sk-your-actual-api-key-here
+```
+
+#### Schritt 3: Neo4j starten
+
+```bash
+# Mit dem bereitgestellten Skript
+./scripts/start_neo4j.sh
+
+# Oder manuell mit Docker
 docker run -d \
   --name neo4j \
   -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/your_password \
+  -e NEO4J_AUTH=neo4j/password \
   neo4j:latest
 ```
 
-### Schritt 4: Setup testen
+#### Schritt 4: Setup testen
 
 ```bash
 python scripts/check_setup.py
 ```
 
-### Schritt 5: App starten
+---
 
-**Option A: DORA Scenario Generator**
+### System starten
+
+#### Option A: Next.js Frontend (Empfohlen)
+
+**Terminal 1 - Backend:**
 ```bash
+source venv/bin/activate  # Windows: venv\Scripts\activate
+python api_server.py
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd crux-frontend
+npm install  # Falls noch nicht installiert
+npm run dev
+```
+
+**Öffne Browser:** http://localhost:3000
+
+#### Option B: Streamlit Frontend
+
+**DORA Scenario Generator:**
+```bash
+source venv/bin/activate
 streamlit run app.py
 ```
 
-**Option B: Crisis Cockpit (Thesis-Evaluation)**
+**Crisis Cockpit (Thesis-Evaluation):**
 ```bash
+source venv/bin/activate
 streamlit run frontend/crisis_cockpit.py
 ```
 
-### Schritt 6: Erste Szenario generieren
+**Öffne Browser:** http://localhost:8501
 
-1. Öffne Browser: http://localhost:8501
-2. Wähle Scenario Type
+---
+
+### Erste Szenario generieren
+
+1. Öffne Browser: http://localhost:3000 (Next.js) oder http://localhost:8501 (Streamlit)
+2. Wähle Scenario Type (z.B. "Ransomware Double Extortion")
 3. Setze Anzahl Injects (z.B. 5)
 4. Klicke "Generate Scenario"
 5. Warte auf Ergebnisse
@@ -64,9 +119,31 @@ streamlit run frontend/crisis_cockpit.py
 
 ---
 
+---
+
 ## 📚 Weitere Ressourcen
 
+- **Vollständige Setup-Anleitung**: [README.md](../../README.md#-setup-anleitung)
+- **Start-Anleitung**: [START.md](../../START.md)
 - **Vollständige Anleitung**: [Anwendungsanleitung](../user-guides/ANWENDUNGSANLEITUNG.md)
 - **Architektur**: [Architektur-Dokumentation](../architecture/ARCHITECTURE.md)
-- **Projekt-Status**: [PROJECT_STATUS.md](../PROJECT_STATUS.md)
+- **Projekt-Status**: [PROJECT_STATUS.md](../../PROJECT_STATUS.md)
+
+---
+
+## ⚠️ Troubleshooting
+
+**Problem:** Backend startet nicht
+- Prüfe ob Virtual Environment aktiviert ist
+- Prüfe ob alle Dependencies installiert sind: `pip install -r requirements.txt`
+
+**Problem:** Frontend zeigt "Backend Offline"
+- Prüfe ob Backend läuft: `curl http://localhost:8000/health`
+- Prüfe Browser-Konsole (F12) auf Fehler
+
+**Problem:** Neo4j-Verbindungsfehler
+- Prüfe ob Docker läuft: `docker ps`
+- Starte Neo4j neu: `./scripts/start_neo4j.sh`
+
+Für weitere Hilfe siehe [README.md Troubleshooting](../../README.md#troubleshooting)
 

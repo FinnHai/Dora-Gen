@@ -47,6 +47,16 @@ Diese Dokumentation beschreibt die CRUX-Plattform, ein neuro-symbolisches Multi-
 
 ### 8. [Thesis-Dokumentation](thesis/THESIS_DOCUMENTATION.md)
 
+### 9. [Vollständige Dokumentation](COMPLETE_DOCUMENTATION.md)
+   - Umfassende Übersicht aller Komponenten
+   - Architektur-Diagramme
+   - Setup & Deployment
+
+### 10. [Komponenten-Dokumentation](COMPONENT_DOCUMENTATION.md)
+   - Detaillierte Beschreibung jeder Komponente
+   - Code-Beispiele
+   - API-Referenz
+
 ---
 
 ## Dokumentations-Struktur

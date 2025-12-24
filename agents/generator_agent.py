@@ -182,6 +182,8 @@ Kontext:
 - Vorgeschlagener Zeitversatz (NUR VORSCHLAG - berechne neu basierend auf Kontext!): {time_offset}
 - Phase: {phase}
 - TTP: {ttp_name} ({ttp_id})
+{temporal_context}
+{normal_operation_rule}
 
 Storyline-Plan:
 {manager_plan}
@@ -254,6 +256,28 @@ Weitere Anforderungen:
         previous_injects_str = self._format_previous_injects(previous_injects)
         manager_plan_str = self._format_manager_plan(manager_plan)
         
+        # Temporale Konsistenz: Hole letzten Zeitstempel
+        last_timestamp = None
+        last_inject_id = None
+        if previous_injects:
+            last_inject = previous_injects[-1]
+            last_timestamp = last_inject.time_offset
+            last_inject_id = last_inject.inject_id
+        
+        # Normal Operation Regel
+        normal_operation_rule = ""
+        if phase == CrisisPhase.NORMAL_OPERATION:
+            normal_operation_rule = """
+⚠️ PHASE: NORMAL_OPERATION - SPEZIELLE REGELN:
+- Generiere KEINE offensichtlichen Angriffe (wie Ransomware, C2 Traffic, aktive Exploits).
+- ERLAUBT sind:
+  * False Positives (fehlerhafte SIEM-Alerts, verdächtige aber harmlose Aktivitäten)
+  * Wartungsfehler (falsche Konfigurationen, unbeabsichtigte Änderungen)
+  * Fehlgeschlagene Logins (Brute-Force-Versuche die fehlschlagen)
+  * Subtile Reconnaissance (Port-Scanning, OSINT-Sammlung, passive Scanning)
+- Falls du einen Angriff startest, MUSS der Inject eine Transition zu 'SUSPICIOUS_ACTIVITY' vorschlagen.
+- Der Content sollte eher "verdächtig" als "bedrohlich" klingen."""
+        
         # User Feedback Formatierung (Human-in-the-Loop)
         user_feedback_section = ""
         if user_feedback and user_feedback.strip():
@@ -312,6 +336,22 @@ CRITICAL: The inject content must logically follow from the response action. Do 
                 validation_feedback_section += "WICHTIG: Verwende NUR Asset-IDs aus der Liste oben!\n"
                 validation_feedback_section += "="*60 + "\n"
         
+        # ================== TEMPORAL CONTEXT DEFINITION (FIX) ==================
+        # 1. Letzten Inject und Zeitstempel holen
+        if previous_injects:
+            last_inject = previous_injects[-1]
+            last_time_str = last_inject.time_offset
+        else:
+            last_time_str = "T+00:00:00"
+        
+        # 2. Variable 'temporal_context' DEFINIEREN (das fehlte!)
+        temporal_context = (
+            f"Der letzte validierte Inject fand um {last_time_str} statt. "
+            f"Dein neuer Inject MUSS zwingend zeitlich danach liegen (z.B. +15 bis +60 Minuten). "
+            f"Berechne den neuen Offset basierend auf {last_time_str}."
+        )
+        # ================== ENDE TEMPORAL CONTEXT DEFINITION ==================
+        
         chain = prompt | self.llm
         
         # Retry-Logik für LLM-Call
@@ -331,6 +371,8 @@ CRITICAL: The inject content must logically follow from the response action. Do 
                     "phase": phase.value,
                     "ttp_name": ttp_name,
                     "ttp_id": ttp_id,
+                    "temporal_context": temporal_context,
+                    "normal_operation_rule": normal_operation_rule,
                     "manager_plan": manager_plan_str,
                     "system_state": system_state_str,
                     "previous_injects": previous_injects_str,

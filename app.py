@@ -574,8 +574,9 @@ def export_to_csv(injects: list) -> BytesIO:
 
 def export_to_json(injects: list) -> str:
     """Exports injects as JSON."""
-    data = [inj.model_dump() for inj in injects]
-    return json.dumps(data, indent=2, ensure_ascii=False, default=str)
+    from utils.safe_json import safe_json_dumps
+    data = [inj.model_dump(mode='json') for inj in injects]
+    return safe_json_dumps(data, indent=2, ensure_ascii=False)
 
 
 def export_to_excel(injects: list) -> BytesIO:
@@ -713,7 +714,8 @@ def export_decisions_to_csv(decisions: list) -> BytesIO:
 
 def export_decisions_to_json(decisions: list) -> str:
     """Exports agent decisions as JSON."""
-    return json.dumps(decisions, indent=2, ensure_ascii=False, default=str)
+    from utils.safe_json import safe_json_dumps
+    return safe_json_dumps(decisions, indent=2, ensure_ascii=False)
 
 
 def export_decisions_to_excel(decisions: list) -> BytesIO:

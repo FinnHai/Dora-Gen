@@ -77,11 +77,40 @@ function InjectCard({ inject, isSelected, onClick, highlightedNodeId, setHovered
             <span className="font-data text-sm text-[#8B949E]">{inject.inject_id}</span>
             <span className="font-data text-xs text-[#8B949E]">{inject.time_offset}</span>
           </div>
-          <div
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: getStatusColor(inject.status) }}
-            title={getStatusLabel(inject.status)}
-          />
+          <div className="flex items-center gap-3">
+            {/* Transparency Score */}
+            {inject.transparency_score !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#8B949E]">Transparency:</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-16 h-1.5 bg-[#30363D] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        inject.transparency_score >= 0.95 ? 'bg-[#2CB67D]' :
+                        inject.transparency_score >= 0.85 ? 'bg-[#7F5AF0]' :
+                        inject.transparency_score >= 0.70 ? 'bg-[#D29922]' :
+                        'bg-[#E53170]'
+                      }`}
+                      style={{ width: `${inject.transparency_score * 100}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs font-mono font-semibold ${
+                    inject.transparency_score >= 0.95 ? 'text-[#2CB67D]' :
+                    inject.transparency_score >= 0.85 ? 'text-[#7F5AF0]' :
+                    inject.transparency_score >= 0.70 ? 'text-[#D29922]' :
+                    'text-[#E53170]'
+                  }`}>
+                    {(inject.transparency_score * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+            )}
+            <div
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: getStatusColor(inject.status) }}
+              title={getStatusLabel(inject.status)}
+            />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -149,7 +178,13 @@ function InjectCard({ inject, isSelected, onClick, highlightedNodeId, setHovered
               ))}
             </div>
           )}
-          {inject.affected_assets.length > 0 && (
+          {/* #region agent log */}
+          {(() => {
+            fetch('http://127.0.0.1:7242/ingest/6266b006-7a5d-43a7-961c-cdfef45b541c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScenarioComposer.tsx:181',message:'Checking affected_assets',data:{inject_id:inject.inject_id,has_affected_assets:!!inject.affected_assets,affected_assets_type:typeof inject.affected_assets,affected_assets_value:inject.affected_assets,affected_assets_length:inject.affected_assets?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            return null;
+          })()}
+          {/* #endregion */}
+          {inject.affected_assets && inject.affected_assets.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {inject.affected_assets.map((asset) => (
                 <span
@@ -181,11 +216,27 @@ function InjectCard({ inject, isSelected, onClick, highlightedNodeId, setHovered
 }
 
 export default function ScenarioComposer() {
-  const { injects, selectedInjectId, selectInject, setHoveredAsset, highlightedNodeId, setHighlightedNode } = useCruxStore();
+  const { injects, selectedInjectId, selectInject, setHoveredAsset, highlightedNodeId, setHighlightedNode, criticLogs } = useCruxStore();
+
+  // Erweitere Injects mit transparency_score aus CriticLogs
+  const injectsWithTransparency = injects.map(inject => {
+    // Finde den zugehörigen Critic-Log für diesen Inject
+    const criticLog = criticLogs.find(
+      log => log.inject_id === inject.inject_id && log.event_type === 'CRITIC'
+    );
+    
+    // Extrahiere overall_quality_score aus den Metriken
+    const transparencyScore = criticLog?.details?.validation?.metrics?.overall_quality_score;
+    
+    return {
+      ...inject,
+      transparency_score: transparencyScore
+    };
+  });
 
   return (
-    <div className="flex h-full flex-col bg-[#090C10]">
-      <div className="border-b border-[#30363D] p-4">
+    <div className="flex h-full flex-col bg-[#090C10] min-h-0">
+      <div className="border-b border-[#30363D] p-4 flex-shrink-0">
         <h2 className="text-lg font-semibold text-[#E6EDF3]">Scenario Composer</h2>
         <p className="text-sm text-[#8B949E]">Timeline der generierten Injects</p>
       </div>
@@ -199,7 +250,7 @@ export default function ScenarioComposer() {
           </div>
         ) : (
           <div className="space-y-4">
-            {injects.map((inject) => (
+            {injectsWithTransparency.map((inject) => (
               <InjectCard
                 key={inject.inject_id}
                 inject={inject}

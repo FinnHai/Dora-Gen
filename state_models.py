@@ -132,7 +132,11 @@ class Inject(BaseModel):
     )
     dora_compliance_tag: Optional[str] = Field(
         None,
-        description="DORA Compliance Tag (z.B. 'Art25_VulnScan', 'Art25_IncidentResponse')"
+        description="DORA Compliance Tag (z.B. 'Art25_VulnScan', 'Art25_IncidentResponse') - DEPRECATED: Verwende compliance_tags"
+    )
+    compliance_tags: Optional[Dict[str, List[str]]] = Field(
+        None,
+        description="Compliance Tags nach Standard (z.B. {'DORA': ['Art25_IncidentResponse'], 'NIST': ['RS.RP']})"
     )
     business_impact: Optional[str] = Field(
         None,
@@ -142,6 +146,16 @@ class Inject(BaseModel):
         default_factory=datetime.now,
         description="Erstellungszeitpunkt"
     )
+    
+    def model_dump_json_safe(self) -> dict:
+        """
+        Sichere Serialisierung für JSON-Export.
+        Konvertiert datetime zu ISO-String.
+        """
+        data = self.model_dump(mode='json')
+        if self.created_at:
+            data['created_at'] = self.created_at.isoformat()
+        return data
 
     @field_validator('content')
     @classmethod
@@ -255,8 +269,8 @@ class ValidationResult(BaseModel):
         description="Ist der Inject logisch konsistent mit der Historie?"
     )
     dora_compliance: bool = Field(
-        ...,
-        description="Erfüllt der Inject DORA-Anforderungen?"
+        True,
+        description="Erfüllt der Inject DORA-Anforderungen? - DEPRECATED: Verwende compliance_results"
     )
     causal_validity: bool = Field(
         ...,
@@ -269,5 +283,9 @@ class ValidationResult(BaseModel):
     warnings: List[str] = Field(
         default_factory=list,
         description="Liste von Warnungen"
+    )
+    compliance_results: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Compliance-Validierungsergebnisse nach Standard (z.B. {'DORA': ComplianceResult, 'NIST': ComplianceResult})"
     )
 
