@@ -74,53 +74,130 @@ graph TB
 3. **LangGraph Workflow**: Orchestrierung der Agenten (Manager, Generator, Critic, Intel)
 4. **Streamlit Frontend**: Parametereingabe und Visualisierung
 
-## 🚀 Setup
+## 🚀 Setup-Anleitung
 
-### 1. Installation
+Diese Anleitung führt Sie Schritt für Schritt durch die Installation des CRUX-Systems auf einem neuen Computer.
+
+> ⚡ **Schnellstart:** Für eine automatisierte Installation können Sie das Setup-Skript verwenden:
+> - **macOS/Linux:** `./setup.sh`
+> - **Windows:** `setup.bat`
+> 
+> Das Skript prüft Voraussetzungen, installiert Dependencies und konfiguriert die Umgebung automatisch.
+
+### Voraussetzungen
+
+Bevor Sie beginnen, stellen Sie sicher, dass folgende Software installiert ist:
+
+- **Python 3.10 oder höher** ([Download](https://www.python.org/downloads/))
+- **Node.js 18 oder höher** und npm ([Download](https://nodejs.org/))
+- **Docker Desktop** ([Download](https://www.docker.com/products/docker-desktop/))
+- **Git** ([Download](https://git-scm.com/downloads))
+
+**Überprüfen Sie die Installation:**
+```bash
+python --version  # Sollte 3.10+ sein
+node --version    # Sollte 18+ sein
+npm --version
+docker --version
+```
+
+---
+
+### Schritt 1: Repository klonen
 
 ```bash
-# Virtual Environment erstellen
-python -m venv venv
-source venv/bin/activate  # Auf Windows: venv\Scripts\activate
+# Klone das Repository (oder entpacke das ZIP-Archiv)
+git clone <repository-url>
+cd BA
 
-# Dependencies installieren
+# Oder falls Sie bereits das Repository haben:
+cd BA
+```
+
+---
+
+### Schritt 2: Backend Setup
+
+#### 2.1 Python Virtual Environment erstellen
+
+```bash
+# Erstelle Virtual Environment
+python3 -m venv venv
+
+# Aktiviere Virtual Environment
+# Auf macOS/Linux:
+source venv/bin/activate
+
+# Auf Windows:
+# venv\Scripts\activate
+```
+
+**Hinweis:** Sie sollten `(venv)` am Anfang Ihrer Kommandozeile sehen, wenn das Virtual Environment aktiviert ist.
+
+#### 2.2 Python Dependencies installieren
+
+```bash
+# Stelle sicher, dass das Virtual Environment aktiviert ist
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Umgebungsvariablen
+**Installationszeit:** Dies kann 5-10 Minuten dauern, je nach Internetverbindung.
 
-Kopiere `.env.example` zu `.env` und fülle die Werte aus:
+#### 2.3 Umgebungsvariablen konfigurieren
 
 ```bash
+# Kopiere die Beispiel-Umgebungsdatei
 cp .env.example .env
+
+# Bearbeite die .env Datei mit Ihrem bevorzugten Editor
+# macOS/Linux:
+nano .env
+# oder
+code .env  # Falls VS Code installiert ist
+
+# Windows:
+notepad .env
 ```
 
-Bearbeite `.env`:
-- `NEO4J_URI`: Neo4j Verbindungs-URI (Standard: `bolt://localhost:7687`)
-- `NEO4J_USER`: Neo4j Benutzername
-- `NEO4J_PASSWORD`: Neo4j Passwort
-- `OPENAI_API_KEY`: OpenAI API Key
+**Wichtige Konfigurationen in `.env`:**
 
-### 3. Neo4j Setup
+```env
+# Neo4j (Standard-Werte funktionieren für lokale Installation)
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password
 
-Stelle sicher, dass Neo4j läuft:
+# OpenAI API Key (ERFORDERLICH für LLM-Funktionalität)
+# Erhalten Sie einen Key unter: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-actual-api-key-here
 
-```bash
-# Mit Docker
-docker run -d \
-  --name neo4j \
-  -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/password \
-  neo4j:latest
+# ChromaDB (Optional, Standard funktioniert)
+CHROMA_DB_PATH=./chroma_db
 ```
 
-### 4. Neo4j starten
+**⚠️ Wichtig:** 
+- Ersetzen Sie `your_openai_api_key_here` mit Ihrem echten OpenAI API Key
+- Die `.env` Datei sollte **NICHT** in Git committed werden (bereits in `.gitignore`)
+
+---
+
+### Schritt 3: Neo4j Datenbank starten
+
+#### 3.1 Docker Desktop starten
+
+Stellen Sie sicher, dass Docker Desktop läuft:
+- **macOS/Windows:** Öffnen Sie Docker Desktop
+- **Linux:** Starten Sie den Docker Daemon: `sudo systemctl start docker`
+
+#### 3.2 Neo4j Container starten
 
 ```bash
-# Mit dem bereitgestellten Skript
+# Verwenden Sie das bereitgestellte Skript (empfohlen)
+chmod +x scripts/start_neo4j.sh
 ./scripts/start_neo4j.sh
 
-# Oder manuell mit Docker
+# Oder manuell mit Docker:
 docker run -d \
   --name neo4j \
   -p 7474:7474 -p 7687:7687 \
@@ -128,15 +205,244 @@ docker run -d \
   neo4j:latest
 ```
 
-### 5. Setup testen
+**Verifizierung:**
+- Neo4j Browser sollte unter `http://localhost:7474` erreichbar sein
+- Login: Username `neo4j`, Password `password` (oder Ihr gewähltes Passwort)
+
+**Hinweis:** Beim ersten Start kann Neo4j 30-60 Sekunden zum Initialisieren benötigen.
+
+---
+
+### Schritt 4: Frontend Setup (Next.js)
+
+#### 4.1 In Frontend-Verzeichnis wechseln
 
 ```bash
-# Prüfe ob alles funktioniert
-python scripts/check_setup.py
-
-# Teste den Workflow
-python tests/test_workflow.py
+cd crux-frontend
 ```
+
+#### 4.2 Node.js Dependencies installieren
+
+```bash
+npm install
+```
+
+**Installationszeit:** Dies kann 2-5 Minuten dauern.
+
+#### 4.3 Frontend-Konfiguration prüfen
+
+Das Frontend ist bereits konfiguriert und sollte ohne weitere Anpassungen funktionieren. Die API-Verbindung erfolgt automatisch zu `http://localhost:8000`.
+
+---
+
+### Schritt 5: Setup verifizieren
+
+#### 5.1 Backend Setup prüfen
+
+```bash
+# Zurück zum Hauptverzeichnis
+cd ..
+
+# Stelle sicher, dass Virtual Environment aktiviert ist
+source venv/bin/activate  # macOS/Linux
+# oder venv\Scripts\activate  # Windows
+
+# Führe Setup-Check aus
+python scripts/check_setup.py
+```
+
+**Erwartete Ausgabe:**
+```
+✅ Pydantic-Modelle: OK
+✅ Neo4j: Verbindung erfolgreich!
+✅ OpenAI: Konfiguriert
+🎉 Alles bereit für die Entwicklung!
+```
+
+#### 5.2 Optional: Tests ausführen
+
+```bash
+# Führe Unit-Tests aus (optional)
+python -m pytest tests/ -v
+
+# Oder nur Setup-Test
+python tests/test_setup.py
+```
+
+---
+
+### Schritt 6: System starten
+
+#### 6.1 Backend API Server starten
+
+**Terminal 1:**
+```bash
+# Stelle sicher, dass Virtual Environment aktiviert ist
+source venv/bin/activate  # macOS/Linux
+# oder venv\Scripts\activate  # Windows
+
+# Starte API Server
+python api_server.py
+```
+
+**Erwartete Ausgabe:**
+```
+INFO:     Started server process [xxxxx]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000
+```
+
+**Backend läuft jetzt auf:** `http://localhost:8000`
+**API Dokumentation:** `http://localhost:8000/docs`
+
+#### 6.2 Frontend Development Server starten
+
+**Terminal 2:**
+```bash
+cd crux-frontend
+npm run dev
+```
+
+**Erwartete Ausgabe:**
+```
+▲ Next.js 16.1.0 (Turbopack)
+- Local:         http://localhost:3000
+✓ Ready in XXXXms
+```
+
+**Frontend läuft jetzt auf:** `http://localhost:3000`
+
+---
+
+### Schritt 7: System verwenden
+
+1. **Öffnen Sie den Browser:** `http://localhost:3000`
+2. **Das Frontend sollte automatisch mit dem Backend verbinden**
+3. **Falls "Backend Offline" angezeigt wird:**
+   - Prüfen Sie, ob der API Server läuft (Terminal 1)
+   - Prüfen Sie die Browser-Konsole auf Fehler (F12)
+   - Verwenden Sie den Demo-Mode als Fallback
+
+---
+
+### Troubleshooting
+
+#### Problem: Python-Version zu alt
+
+**Fehler:** `Python 3.10+ wird benötigt`
+
+**Lösung:**
+```bash
+# Prüfe Python-Version
+python3 --version
+
+# Falls < 3.10, installieren Sie Python 3.10+ von python.org
+# Verwenden Sie dann python3 statt python
+python3 -m venv venv
+```
+
+#### Problem: Neo4j-Verbindungsfehler
+
+**Fehler:** `Neo4j connection failed`
+
+**Lösung:**
+1. Prüfen Sie, ob Docker läuft: `docker ps`
+2. Prüfen Sie, ob Neo4j Container läuft: `docker ps | grep neo4j`
+3. Starten Sie Neo4j neu: `./scripts/start_neo4j.sh`
+4. Prüfen Sie die `.env` Datei auf korrekte Credentials
+5. Prüfen Sie die Neo4j Browser UI: `http://localhost:7474`
+
+#### Problem: OpenAI API Fehler
+
+**Fehler:** `OpenAI API key not found` oder `Invalid API key`
+
+**Lösung:**
+1. Prüfen Sie die `.env` Datei: `cat .env | grep OPENAI`
+2. Stellen Sie sicher, dass der API Key korrekt ist (beginnt mit `sk-`)
+3. Erhalten Sie einen neuen Key: https://platform.openai.com/api-keys
+4. Stellen Sie sicher, dass Sie Credits auf Ihrem OpenAI Account haben
+
+#### Problem: Frontend zeigt CSS-Fehler
+
+**Fehler:** `@import rules must precede all rules`
+
+**Lösung:**
+```bash
+cd crux-frontend
+rm -rf .next node_modules/.cache .turbo
+npm run dev
+```
+
+#### Problem: Port bereits belegt
+
+**Fehler:** `Address already in use`
+
+**Lösung:**
+```bash
+# Finde Prozess auf Port 8000 (Backend)
+lsof -ti:8000 | xargs kill -9  # macOS/Linux
+# oder
+netstat -ano | findstr :8000  # Windows, dann Task beenden
+
+# Finde Prozess auf Port 3000 (Frontend)
+lsof -ti:3000 | xargs kill -9  # macOS/Linux
+# oder
+netstat -ano | findstr :3000  # Windows, dann Task beenden
+```
+
+#### Problem: ModuleNotFoundError
+
+**Fehler:** `ModuleNotFoundError: No module named 'fastapi'`
+
+**Lösung:**
+```bash
+# Stelle sicher, dass Virtual Environment aktiviert ist
+source venv/bin/activate  # macOS/Linux
+# oder venv\Scripts\activate  # Windows
+
+# Installiere fehlende Dependencies
+pip install -r requirements.txt
+```
+
+---
+
+### Nächste Schritte
+
+Nach erfolgreichem Setup:
+
+1. **Lesen Sie die Dokumentation:**
+   - [Vollständige Dokumentation](docs/COMPLETE_DOCUMENTATION.md)
+   - [Quick Start Guide](docs/getting-started/QUICK_START.md)
+   - [Anwendungsanleitung](docs/user-guides/ANWENDUNGSANLEITUNG.md)
+
+2. **Testen Sie das System:**
+   - Generieren Sie ein Test-Szenario über das Frontend
+   - Prüfen Sie die API-Dokumentation: `http://localhost:8000/docs`
+
+3. **Entwicklung:**
+   - Backend-Code: Hauptverzeichnis (`api_server.py`, `agents/`, `workflows/`)
+   - Frontend-Code: `crux-frontend/` Verzeichnis
+
+---
+
+### Wichtige URLs nach dem Start
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8000
+- **API Dokumentation:** http://localhost:8000/docs
+- **API Health Check:** http://localhost:8000/health
+- **Neo4j Browser:** http://localhost:7474
+
+---
+
+### Hilfe und Support
+
+Bei Problemen:
+1. Prüfen Sie die [Troubleshooting-Sektion](#troubleshooting) oben
+2. Lesen Sie die [Dokumentation](docs/README.md)
+3. Prüfen Sie die Logs in den Terminal-Fenstern
+4. Prüfen Sie die Browser-Konsole (F12) für Frontend-Fehler
 
 ## 📋 Verwendung
 

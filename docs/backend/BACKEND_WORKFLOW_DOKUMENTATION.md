@@ -300,11 +300,27 @@ ORDER BY depth, target.type
 
 **Zweck:** Lädt aktuellen Systemzustand aus Neo4j in WorkflowState
 
+**Performance-Tracking:**
+```python
+node_start_time = time.time()  # Zu Beginn
+# ... Node-Logik ...
+self.performance_monitor.end_node("state_check", node_start_time, success=True)
+```
+
 **Prozess:**
-1. Ruft `neo4j_client.get_current_state()` auf
-2. Filtert Entities (überspringt `INJ-*` und `SCEN-*` IDs)
-3. Konvertiert zu Dictionary: `entity_id -> entity_data`
-4. Fallback: Erstellt Standard-Assets wenn DB leer
+1. Startet Performance-Tracking (`node_start_time = time.time()`)
+2. Ruft `neo4j_client.get_current_state()` auf
+3. Filtert Entities (überspringt `INJ-*` und `SCEN-*` IDs)
+4. Validiert Entity-Typen (nur Server, Application, Database, etc.)
+5. Konvertiert zu Dictionary: `entity_id -> entity_data`
+6. Fallback: Erstellt Standard-Assets wenn DB leer
+7. Beendet Performance-Tracking (`performance_monitor.end_node()`)
+
+**Filter-Logik:**
+- Überspringt alle IDs die mit `INJ-` oder `SCEN-` beginnen
+- Akzeptiert nur Entities mit:
+  - Gültigem Entity-Type (`server`, `application`, `database`, `service`, `asset`, `system`)
+  - ODER Asset-Präfix (`SRV-`, `APP-`, `DB-`, `SVC-`, `SYS-`)
 
 **Output:**
 ```python
@@ -730,11 +746,28 @@ DB-SQL-001 (degraded) ← INJ-001 (Second-Order)
 
 ## 🚀 Performance-Optimierungen
 
-### 1. State-Caching
+### 1. State-Caching (`WorkflowOptimizer`)
 
 **Problem:** Neo4j-Queries sind langsam (~100-200ms)
 
 **Lösung:** State wird pro Iteration nur einmal geladen (State Check Node)
+
+**Implementierung:**
+```python
+class WorkflowOptimizer:
+    def __init__(self):
+        self.state_cache: Dict[str, tuple] = {}  # key -> (data, timestamp)
+        self.cache_ttl = timedelta(seconds=30)
+    
+    def get_cached_state(self, cache_key: str, fetch_function: callable, force_refresh: bool = False):
+        # Prüft Cache (TTL: 30 Sekunden)
+        # Bei Cache-Miss: Lädt neu und speichert im Cache
+```
+
+**Cache-Verhalten:**
+- TTL: 30 Sekunden
+- Automatische Invalidierung nach TTL
+- Manuelles Clearing möglich
 
 ### 2. Batch-Updates
 
@@ -747,6 +780,51 @@ DB-SQL-001 (degraded) ← INJ-001 (Second-Order)
 **Problem:** Tiefe Rekursion kann langsam sein
 
 **Lösung:** `max_depth=3` begrenzt Rekursionstiefe
+
+### 4. Early Exit-Strategien
+
+**Problem:** Workflow sollte bei kritischen Fehlern stoppen
+
+**Implementierung:**
+```python
+def should_early_exit(
+    self,
+    errors: List[str],
+    warnings: List[str],
+    consecutive_failures: int
+) -> Tuple[bool, str]:
+    # Exit wenn:
+    # - 3+ aufeinanderfolgende Fehler
+    # - 20+ Gesamtfehler
+    # - FATAL-Fehler vorhanden
+```
+
+**Exit-Bedingungen:**
+- `max_consecutive_errors = 3`
+- `max_total_errors = 20`
+- FATAL-Fehler im State
+
+### 5. Performance-Monitoring (`WorkflowPerformanceMonitor`)
+
+**Zweck:** Misst Ausführungszeit jedes Nodes für Performance-Analysen
+
+**Implementierung:**
+```python
+class WorkflowPerformanceMonitor:
+    def start_node(self, node_name: str) -> float:
+        return time.time()
+    
+    def end_node(self, node_name: str, start_time: float, success: bool):
+        duration = time.time() - start_time
+        # Speichert Metriken für Analyse
+```
+
+**Gemessene Metriken:**
+- Node-Ausführungszeit (Millisekunden)
+- Erfolgsrate pro Node
+- Durchschnittliche Ausführungszeit
+- Fehlerrate
+- Gesamt-Workflow-Zeit
 
 ---
 
@@ -776,13 +854,29 @@ DB-SQL-001 (degraded) ← INJ-001 (Second-Order)
 
 ```
 workflows/
-├── scenario_workflow.py    # LangGraph Workflow-Orchestrierung
-├── state_schema.py          # WorkflowState TypedDict Definition
-└── fsm.py                   # Finite State Machine für Phasen
+├── scenario_workflow.py       # LangGraph Workflow-Orchestrierung
+├── state_schema.py             # WorkflowState TypedDict Definition
+├── fsm.py                      # Finite State Machine für Phasen
+└── workflow_optimizations.py  # Performance-Optimierungen & Monitoring
 
-neo4j_client.py              # Neo4j Client & State Management
-state_models.py               # Pydantic Models (Inject, etc.)
+neo4j_client.py                 # Neo4j Client & State Management
+state_models.py                 # Pydantic Models (Inject, etc.)
+forensic_logger.py              # Forensic Trace Logging
 ```
+
+### Wichtige Abhängigkeiten
+
+**Externe Bibliotheken:**
+- `langgraph`: Workflow-Orchestrierung
+- `langchain`: LLM-Integration
+- `neo4j`: Graph-Datenbank
+- `pydantic`: Datenvalidierung
+- `python-multipart`: File-Uploads (FastAPI)
+
+**Interne Module:**
+- `agents/`: Manager, Intel, Generator, Critic Agents
+- `Compliance/`: Compliance-Frameworks (DORA, NIST, ISO27001)
+- `utils/`: Retry-Handler, etc.
 
 ---
 
@@ -810,6 +904,142 @@ state_models.py               # Pydantic Models (Inject, etc.)
 
 ---
 
-**Letzte Aktualisierung:** 2025-12-20  
-**Version:** 1.0.0
+---
+
+## ⚡ Performance-Monitoring
+
+### WorkflowPerformanceMonitor
+
+Jeder Node misst seine Ausführungszeit für Performance-Analysen:
+
+```python
+# Zu Beginn jedes Nodes:
+node_start_time = time.time()
+
+# Am Ende (Erfolg oder Fehler):
+self.performance_monitor.end_node("node_name", node_start_time, success=True/False)
+```
+
+**Gemessene Metriken:**
+- Node-Ausführungszeit (in Sekunden)
+- Erfolgsrate pro Node
+- Durchschnittliche Ausführungszeit
+- Fehlerrate
+
+**Verwendung:**
+- Performance-Analysen
+- Bottleneck-Identifikation
+- Optimierungs-Entscheidungen
+
+---
+
+## 🔧 Technische Details & Fixes
+
+### Compliance-Modul Import
+
+**Problem:** Case-insensitive Dateisystem (macOS) - Verzeichnis heißt `Compliance`, Import verwendet `compliance`
+
+**Lösung:** Dynamischer Import mit `importlib.util` in `critic_agent.py`:
+```python
+# Lädt Compliance-Verzeichnis als 'compliance' Modul
+spec = importlib.util.spec_from_file_location(
+    "compliance", 
+    compliance_dir / "__init__.py",
+    submodule_search_locations=[str(compliance_dir)]
+)
+compliance_module = importlib.util.module_from_spec(spec)
+sys.modules["compliance"] = compliance_module
+```
+
+### Node Performance-Tracking
+
+**Implementierung:** Jeder Node erfasst `node_start_time` zu Beginn:
+```python
+def _state_check_node(self, state: WorkflowState) -> Dict[str, Any]:
+    node_start_time = time.time()  # ← Wichtig für Performance-Monitoring
+    # ... Node-Logik ...
+    self.performance_monitor.end_node("state_check", node_start_time, success=True)
+```
+
+---
+
+## 📤 Forensic Trace Upload
+
+### API-Endpoint
+
+**POST `/api/forensic/upload`**
+
+Lädt eine `forensic_trace.jsonl` Datei hoch und parst sie für die Anzeige im Frontend.
+
+**Request:**
+- Content-Type: `multipart/form-data`
+- File: `.jsonl` Datei
+
+**Response:**
+```json
+{
+  "success": true,
+  "logs_count": 152,
+  "logs": [
+    {
+      "timestamp": "2025-12-18T18:03:01.801915",
+      "scenario_id": "SCEN-001-THESIS",
+      "event_type": "CRITIC",
+      "iteration": 0,
+      "refine_count": 0,
+      "inject_id": "INJ-001",
+      "message": "Iteration 0, Refine 0",
+      "details": {
+        "validation": {
+          "is_valid": true,
+          "errors": [],
+          "warnings": []
+        }
+      }
+    }
+  ]
+}
+```
+
+**Frontend-Integration:**
+- Upload-Button in `ForensicTrace.tsx`
+- Automatische Konvertierung zu CriticLog-Format
+- Anzeige in der Forensic Trace Komponente
+
+---
+
+## 🐛 Bekannte Probleme & Lösungen
+
+### 1. Compliance-Modul Import (macOS)
+
+**Problem:** `ModuleNotFoundError: No module named 'compliance'` auf macOS
+
+**Ursache:** Case-insensitive Dateisystem, Verzeichnis heißt `Compliance`, Import verwendet `compliance`
+
+**Lösung:** Dynamischer Import mit `importlib.util` (siehe oben)
+
+**Status:** ✅ Behoben
+
+### 2. Performance-Monitoring Variable
+
+**Problem:** `NameError: name 'node_start_time' is not defined` in `_state_check_node`
+
+**Ursache:** Variable wurde verwendet, aber nie definiert
+
+**Lösung:** `node_start_time = time.time()` am Anfang jedes Nodes hinzugefügt
+
+**Status:** ✅ Behoben
+
+### 3. Neo4j Mock-Tests
+
+**Problem:** Mock-Objekte unterstützten keine Dictionary-Subskription (`record["e"]`)
+
+**Lösung:** Mock-Records mit `__getitem__` konfiguriert, Mock-Results mit `single()` Methode
+
+**Status:** ✅ Behoben
+
+---
+
+**Letzte Aktualisierung:** 2025-12-22  
+**Version:** 1.1.0
 

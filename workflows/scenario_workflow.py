@@ -15,9 +15,16 @@ from typing import Dict, Any, Optional, List
 from langgraph.graph import StateGraph, END
 from datetime import datetime, timedelta
 import uuid
+import sys
+import time
+from pathlib import Path
+
+# Ensure current directory is in path for compliance module
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from workflows.state_schema import WorkflowState
 from workflows.fsm import CrisisFSM
+from workflows.workflow_optimizations import WorkflowOptimizer, WorkflowPerformanceMonitor
 from agents.manager_agent import ManagerAgent
 from agents.intel_agent import IntelAgent
 from agents.generator_agent import GeneratorAgent
@@ -47,7 +54,8 @@ class ScenarioWorkflow:
         self,
         neo4j_client: Neo4jClient,
         max_iterations: int = 10,
-        interactive_mode: bool = False
+        interactive_mode: bool = False,
+        compliance_standards: Optional[List] = None
     ):
         """
         Initialisiert den Workflow.
@@ -56,16 +64,28 @@ class ScenarioWorkflow:
             neo4j_client: Neo4j Client für State Management
             max_iterations: Maximale Anzahl Injects
             interactive_mode: Ob interaktiver Modus mit Benutzer-Entscheidungen aktiviert ist
+            compliance_standards: Liste von Compliance-Standards (Standard: [DORA])
         """
         self.neo4j_client = neo4j_client
         self.max_iterations = max_iterations
         self.interactive_mode = interactive_mode
         
+        # Import Compliance-Standards (mit Fallback)
+        # CriticAgent hat bereits einen Fallback, daher können wir None übergeben
+        # wenn compliance nicht verfügbar ist
+        
         # Initialisiere Agenten
         self.manager_agent = ManagerAgent()
         self.intel_agent = IntelAgent()
         self.generator_agent = GeneratorAgent()
-        self.critic_agent = CriticAgent()
+        
+        # Initialisiere Critic Agent - er hat bereits Fallback-Logik
+        # Wenn compliance_standards None ist, verwendet CriticAgent seinen eigenen Fallback
+        self.critic_agent = CriticAgent(compliance_standards=compliance_standards)
+        
+        # Initialisiere Workflow-Optimierungen
+        self.optimizer = WorkflowOptimizer()
+        self.performance_monitor = WorkflowPerformanceMonitor()
         
         # Erstelle Graph
         self.graph = self._create_graph()
@@ -135,6 +155,8 @@ class ScenarioWorkflow:
     
     def _state_check_node(self, state: WorkflowState) -> Dict[str, Any]:
         """Node: State Check - Abfrage des aktuellen Systemzustands aus Neo4j."""
+        node_start_time = time.time()
+        
         iteration = state.get('iteration', 0)
         injects_count = len(state.get('injects', []))
         print(f"🔍 [State Check] Iteration {iteration}, Injects: {injects_count}, Phase: {state.get('current_phase', 'N/A')}")
@@ -217,6 +239,9 @@ class ScenarioWorkflow:
             logs = state.get("workflow_logs", [])
             logs.append(log_entry)
             
+            # Performance-Monitoring
+            self.performance_monitor.end_node("state_check", node_start_time, success=True)
+            
             return {
                 "system_state": system_state_dict,
                 "workflow_logs": logs
@@ -227,9 +252,29 @@ class ScenarioWorkflow:
             logs = state.get("workflow_logs", [])
             logs.append(log_entry)
             
+            # Performance-Monitoring
+            self.performance_monitor.end_node("state_check", node_start_time, success=False)
+            
+            # Early Exit prüfen
+            errors = state.get("errors", []) + [f"State Check Fehler: {e}"]
+            should_exit, reason = self.optimizer.should_early_exit(
+                errors=errors,
+                warnings=state.get("warnings", []),
+                consecutive_failures=state.get("metadata", {}).get("consecutive_failures", 0)
+            )
+            
+            if should_exit:
+                print(f"🛑 Early Exit: {reason}")
+                return {
+                    "system_state": {},
+                    "errors": errors,
+                    "workflow_logs": logs,
+                    "end_condition": "FATAL"
+                }
+            
             return {
                 "system_state": {},
-                "errors": state.get("errors", []) + [f"State Check Fehler: {e}"],
+                "errors": errors,
                 "workflow_logs": logs
             }
     

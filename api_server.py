@@ -8,16 +8,20 @@ Stellt Endpoints bereit für:
 - Critic-Logs
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import sys
+import json
 from pathlib import Path
+from utils.json_utils import serialize_datetime_recursive, safe_json_dumps
 
 # Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+project_root = Path(__file__).parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from neo4j_client import Neo4jClient
 from workflows.scenario_workflow import ScenarioWorkflow
@@ -53,13 +57,14 @@ def get_neo4j_client():
     return neo4j_client
 
 
-def get_workflow():
+def get_workflow(max_iterations: int = 20):
     """Lazy initialization of workflow."""
     global workflow
-    if workflow is None:
+    # Recreate workflow if max_iterations changed
+    if workflow is None or workflow.max_iterations != max_iterations:
         workflow = ScenarioWorkflow(
             neo4j_client=get_neo4j_client(),
-            max_iterations=20,
+            max_iterations=max_iterations,
             interactive_mode=False
         )
     return workflow
@@ -93,181 +98,91 @@ class GraphLinkResponse(BaseModel):
     type: str
 
 
-class CriticLogResponse(BaseModel):
-    timestamp: str
-    inject_id: str
-    event_type: str  # 'DRAFT', 'CRITIC', 'REFINED'
-    message: str
-    details: Optional[Dict[str, Any]] = None
-
-
 class ScenarioRequest(BaseModel):
     scenario_type: str
     num_injects: int = 10
 
 
+class ScenarioListItem(BaseModel):
+    scenario_id: str
+    scenario_type: str
+    current_phase: str
+    start_time: Optional[str] = None
+    created_at: Optional[str] = None
+    user: Optional[str] = None
+    inject_count: int = 0
+
+
 @app.get("/")
 async def root():
-    """Health check endpoint."""
-    return {"status": "ok", "service": "CRUX API"}
+    """Root endpoint."""
+    return {
+        "message": "CRUX API Server",
+        "version": "1.0.0",
+        "endpoints": {
+            "graph": "/api/graph/nodes, /api/graph/links",
+            "scenario": "/api/scenario/generate, /api/scenario/{id}/logs, /api/scenario/list, /api/scenario/{id}",
+            "forensic": "/api/forensic/upload"
+        }
+    }
 
 
 @app.get("/api/graph/nodes")
 async def get_graph_nodes():
-    """Holt alle Nodes aus dem Knowledge Graph."""
+    """Gibt alle Graph-Nodes zurück."""
     try:
         client = get_neo4j_client()
-        # Verwende get_current_state statt get_all_assets
         entities = client.get_current_state()
         
-        graph_nodes = []
-        seen_ids = set()
-        
+        nodes = []
         for entity in entities:
-            # Extrahiere Node-Informationen aus Entity
-            entity_data = entity.get("e", {})
-            if isinstance(entity_data, dict):
-                # Versuche verschiedene ID-Felder
-                node_id = (
-                    entity_data.get("id") or 
-                    entity_data.get("entity_id") or
-                    entity_data.get("name") or 
-                    str(entity_data.get("identity", ""))
-                )
-                
-                if node_id and node_id not in seen_ids:
-                    seen_ids.add(node_id)
-                    
-                    # Bestimme Typ
-                    node_type = entity_data.get("type") or entity_data.get("entity_type", "server")
-                    # Normalisiere Typ
-                    type_mapping = {
-                        "Server": "server",
-                        "Database": "database",
-                        "Workstation": "workstation",
-                        "Network": "network",
-                        "Firewall": "network",
-                        "LoadBalancer": "network",
-                    }
-                    node_type = type_mapping.get(node_type, node_type.lower())
-                    
-                    # Bestimme Status
-                    status = entity_data.get("status", "online")
-                    status_mapping = {
-                        "normal": "online",
-                        "suspicious": "degraded",
-                        "compromised": "compromised",
-                        "encrypted": "compromised",
-                        "degraded": "degraded",
-                        "offline": "offline",
-                    }
-                    status = status_mapping.get(status.lower(), status.lower())
-                    
-                    graph_nodes.append({
-                        "id": node_id,
-                        "label": entity_data.get("name") or entity_data.get("label") or node_id,
-                        "type": node_type,
-                        "status": status,
-                    })
+            # get_current_state() gibt entity_id, entity_type, name, status zurück
+            node_id = entity.get("entity_id") or entity.get("id", "")
+            node_name = entity.get("name", node_id)
+            node_type = entity.get("entity_type") or entity.get("type", "server")
+            node_status = entity.get("status", "online")
+            
+            if node_id:  # Nur Nodes mit gültiger ID hinzufügen
+                nodes.append({
+                    "id": node_id,
+                    "label": node_name,
+                    "type": node_type.lower() if isinstance(node_type, str) else "server",
+                    "status": node_status.lower() if isinstance(node_status, str) else "online",
+                })
         
-        return {"nodes": graph_nodes}
+        return {"nodes": nodes}
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error fetching graph nodes: {error_trace}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/graph/links")
 async def get_graph_links():
-    """Holt alle Relationships aus dem Knowledge Graph."""
+    """Gibt alle Graph-Links zurück."""
     try:
         client = get_neo4j_client()
         
-        # Direkte Neo4j-Abfrage für Relationships
-        if client.driver:
-            with client.driver.session(database=client.database) as session:
-                query = """
-                MATCH (a)-[r]->(b)
-                WHERE a.id IS NOT NULL AND b.id IS NOT NULL
-                RETURN a.id as source, b.id as target, type(r) as rel_type
-                LIMIT 500
-                """
-                result = session.run(query)
-                
-                links = []
-                seen_links = set()
-                
-                for record in result:
-                    source_id = record.get("source")
-                    target_id = record.get("target")
-                    rel_type = record.get("rel_type", "RELATES_TO")
-                    
-                    if source_id and target_id:
-                        link_key = f"{source_id}->{target_id}"
-                        if link_key not in seen_links:
-                            seen_links.add(link_key)
-                            # Normalisiere Relationship-Typ
-                            type_mapping = {
-                                "RUNS_ON": "CONNECTS_TO",
-                                "USES": "USES",
-                                "PROTECTS": "PROTECTS",
-                                "CONNECTS_TO": "CONNECTS_TO",
-                                "REPLICATES_TO": "REPLICATES_TO",
-                            }
-                            normalized_type = type_mapping.get(rel_type, rel_type)
-                            
-                            links.append({
-                                "source": source_id,
-                                "target": target_id,
-                                "type": normalized_type,
-                            })
-                
-                if links:
-                    return {"links": links}
-        
-        # Fallback: Parse aus get_current_state
-        entities = client.get_current_state()
-        links = []
-        seen_links = set()
-        
-        for entity in entities:
-            entity_data = entity.get("e", {})
-            relationships = entity.get("relationships", [])
-            related_entities = entity.get("related_entities", [])
+        # Hole alle Relationships
+        with client.driver.session(database=client.database) as session:
+            query = """
+            MATCH (a:Entity)-[r]->(b:Entity)
+            RETURN a.id as source, b.id as target, type(r) as type
+            """
+            result = session.run(query)
             
-            if isinstance(entity_data, dict):
-                source_id = (
-                    entity_data.get("id") or 
-                    entity_data.get("entity_id") or
-                    entity_data.get("name") or 
-                    str(entity_data.get("identity", ""))
-                )
-                
-                for i, rel in enumerate(relationships):
-                    if i < len(related_entities):
-                        target_entity = related_entities[i]
-                        if isinstance(target_entity, dict):
-                            target_id = (
-                                target_entity.get("id") or 
-                                target_entity.get("entity_id") or
-                                target_entity.get("name") or 
-                                str(target_entity.get("identity", ""))
-                            )
-                            
-                            if source_id and target_id:
-                                link_key = f"{source_id}->{target_id}"
-                                if link_key not in seen_links:
-                                    seen_links.add(link_key)
-                                    rel_type = "CONNECTS_TO"
-                                    if isinstance(rel, dict):
-                                        rel_type = rel.get("type", "CONNECTS_TO")
-                                    
-                                    links.append({
-                                        "source": source_id,
-                                        "target": target_id,
-                                        "type": rel_type or "CONNECTS_TO",
-                                    })
+            links = []
+            for record in result:
+                links.append({
+                    "source": record["source"],
+                    "target": record["target"],
+                    "type": record["type"],
+                })
         
         return {"links": links}
     except Exception as e:
+        print(f"Error fetching graph links: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -275,280 +190,349 @@ async def get_graph_links():
 async def generate_scenario(request: ScenarioRequest):
     """Generiert ein neues Szenario."""
     try:
-        workflow = get_workflow()
+        workflow = get_workflow(max_iterations=request.num_injects)
         
-        # Convert string to ScenarioType enum
+        # Map scenario type string to enum
         scenario_type_map = {
+            "ransomware": ScenarioType.RANSOMWARE_DOUBLE_EXTORTION,
             "ransomware_double_extortion": ScenarioType.RANSOMWARE_DOUBLE_EXTORTION,
+            "data_breach": ScenarioType.INSIDER_THREAT_DATA_MANIPULATION,  # DATA_BREACH existiert nicht, verwende ähnlichen Typ
+            "ddos": ScenarioType.DDOS_CRITICAL_FUNCTIONS,
             "ddos_critical_functions": ScenarioType.DDOS_CRITICAL_FUNCTIONS,
+            "insider_threat": ScenarioType.INSIDER_THREAT_DATA_MANIPULATION,
+            "insider_threat_data_manipulation": ScenarioType.INSIDER_THREAT_DATA_MANIPULATION,
             "supply_chain_compromise": ScenarioType.SUPPLY_CHAIN_COMPROMISE,
-            "insider_threat": ScenarioType.INSIDER_THREAT,
+            "supply_chain": ScenarioType.SUPPLY_CHAIN_COMPROMISE,
         }
         
         scenario_type = scenario_type_map.get(request.scenario_type.lower())
         if not scenario_type:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unknown scenario type: {request.scenario_type}"
+                detail=f"Unknown scenario type: {request.scenario_type}. Available: {list(scenario_type_map.keys())}"
             )
         
+        # Generate scenario
         result = workflow.generate_scenario(scenario_type=scenario_type)
         
-        # Convert Inject models to API format
-        injects = []
-        for inj in result.get("injects", []):
-            if isinstance(inj, InjectModel):
-                injects.append({
-                    "inject_id": inj.inject_id,
-                    "time_offset": inj.time_offset,
-                    "content": inj.content,
-                    "status": "verified",  # Default status
-                    "phase": inj.phase.value if hasattr(inj.phase, 'value') else str(inj.phase),
-                    "source": inj.source,
-                    "target": inj.target,
-                    "modality": inj.modality.value if hasattr(inj.modality, 'value') else str(inj.modality),
-                    "mitre_id": inj.technical_metadata.mitre_id if inj.technical_metadata else None,
-                    "affected_assets": inj.technical_metadata.affected_assets if inj.technical_metadata else [],
-                    "refinement_history": None,  # Would need to parse from forensic logs
-                })
+        # Convert injects to response format
+        injects_response = []
+        for inject in result.get("injects", []):
+            injects_response.append({
+                "inject_id": inject.inject_id,
+                "time_offset": inject.time_offset,
+                "content": inject.content,
+                "status": "verified",
+                "phase": inject.phase.value if hasattr(inject.phase, 'value') else str(inject.phase),
+                "source": inject.source,
+                "target": inject.target,
+                "modality": inject.modality.value if hasattr(inject.modality, 'value') else str(inject.modality),
+                "mitre_id": inject.technical_metadata.mitre_id if inject.technical_metadata else None,
+                "affected_assets": inject.technical_metadata.affected_assets if inject.technical_metadata else [],
+            })
         
         return {
             "scenario_id": result.get("scenario_id"),
-            "injects": injects,
+            "injects": injects_response,
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error generating scenario: {error_trace}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating scenario: {str(e)}\n\nTraceback:\n{error_trace}"
+        )
 
 
 @app.get("/api/scenario/{scenario_id}/logs")
 async def get_scenario_logs(scenario_id: str):
-    """Holt Critic-Logs für ein Szenario."""
+    """Gibt Critic-Logs für ein Szenario zurück."""
     try:
-        import json
-        # Read forensic trace log file
-        log_file = Path("logs/forensic/forensic_trace.jsonl")
+        # Versuche Forensic Trace Datei zu finden
+        trace_file = Path(f"logs/forensic/forensic_trace.jsonl")
         logs = []
         
-        if log_file.exists():
-            with open(log_file, 'r') as f:
+        if trace_file.exists():
+            with open(trace_file, 'r') as f:
                 for line in f:
-                    if line.strip() and not line.startswith('#'):
+                    line = line.strip()
+                    if line and not line.startswith('#'):
                         try:
                             log_entry = json.loads(line)
-                            # Filter nach scenario_id oder zeige alle wenn scenario_id leer
-                            if not scenario_id or log_entry.get("scenario_id") == scenario_id:
-                                data = log_entry.get("data", {})
-                                validation = data.get("validation", {})
-                                
-                                # Erstelle lesbare Message
-                                inject_id = data.get("inject_id", "UNKNOWN")
-                                event_type = log_entry.get("event_type", "UNKNOWN")
-                                
-                                if event_type == "CRITIC":
-                                    decision = data.get("decision", "unknown")
-                                    is_valid = validation.get("is_valid", False)
-                                    errors = validation.get("errors", [])
-                                    warnings = validation.get("warnings", [])
-                                    
-                                    if decision == "reject":
-                                        message = f"[CRITIC] Inject {inject_id} rejected"
-                                    elif decision == "accept":
-                                        message = f"[CRITIC] Inject {inject_id} accepted"
-                                    else:
-                                        message = f"[CRITIC] Scanning Inject {inject_id}..."
-                                elif event_type == "GENERATOR":
-                                    message = f"[DRAFT] Inject {inject_id} generated"
-                                else:
-                                    message = f"[{event_type}] Event for {inject_id}"
+                            # Filter nach scenario_id
+                            if log_entry.get('scenario_id') == scenario_id:
+                                data = log_entry.get('data', {})
+                                validation = data.get('validation', {})
                                 
                                 logs.append({
                                     "timestamp": log_entry.get("timestamp", ""),
-                                    "inject_id": inject_id,
-                                    "event_type": event_type,
-                                    "message": message,
+                                    "inject_id": data.get("inject_id", ""),
+                                    "event_type": log_entry.get("event_type", "CRITIC"),
+                                    "message": f"Validation: {data.get('decision', 'unknown')}",
                                     "details": {
                                         "validation": {
                                             "is_valid": validation.get("is_valid", True),
-                                            "errors": errors,
-                                            "warnings": warnings,
-                                        },
-                                        "decision": data.get("decision"),
-                                        "iteration": log_entry.get("iteration"),
-                                        "refine_count": log_entry.get("refine_count", 0),
-                                    },
+                                            "errors": validation.get("errors", []),
+                                            "warnings": validation.get("warnings", []),
+                                        }
+                                    }
                                 })
                         except json.JSONDecodeError:
                             continue
         
-        # Sortiere nach Timestamp
-        logs.sort(key=lambda x: x["timestamp"])
         return {"logs": logs}
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error fetching scenario logs: {error_trace}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/scenario/latest")
 async def get_latest_scenario():
-    """Holt das neueste Szenario mit allen Injects aus Neo4j oder Forensic Logs."""
+    """Gibt das neueste Szenario zurück."""
     try:
-        import json
-        from datetime import datetime
+        client = get_neo4j_client()
+        scenarios = client.list_scenarios(limit=1)
         
-        # Versuche zuerst aus Neo4j zu holen
-        try:
-            client = get_neo4j_client()
-            # Hole alle Szenarien aus Neo4j
-            with client.driver.session(database=client.database) as session:
-                query = """
-                MATCH (s:Scenario)
-                RETURN s
-                ORDER BY s.created_at DESC
-                LIMIT 1
-                """
-                result = session.run(query)
-                record = result.single()
-                
-                if record:
-                    scenario_node = dict(record["s"])
-                    scenario_id = scenario_node.get("id") or scenario_node.get("scenario_id")
-                    
-                    # Hole Injects für dieses Szenario
-                    injects_query = """
-                    MATCH (s:Scenario {id: $scenario_id})-[:HAS_INJECT]->(i:Inject)
-                    RETURN i
-                    ORDER BY i.time_offset ASC
-                    """
-                    injects_result = session.run(injects_query, scenario_id=scenario_id)
-                    
-                    injects = []
-                    for inj_record in injects_result:
-                        inj_data = dict(inj_record["i"])
-                        injects.append({
-                            "inject_id": inj_data.get("id") or inj_data.get("inject_id"),
-                            "time_offset": inj_data.get("time_offset", "T+00:00"),
-                            "content": inj_data.get("content", ""),
-                            "status": "verified",
-                            "phase": inj_data.get("phase", "UNKNOWN"),
-                            "source": inj_data.get("source", "System"),
-                            "target": inj_data.get("target", "SOC"),
-                            "modality": inj_data.get("modality", "SIEM Alert"),
-                            "mitre_id": inj_data.get("mitre_id"),
-                            "affected_assets": inj_data.get("affected_assets", []),
-                            "refinement_history": None,
-                        })
-                    
-                    if injects:
-                        return {
-                            "scenario_id": scenario_id,
-                            "injects": injects,
-                        }
-        except Exception as neo4j_error:
-            # Fallback zu Logs wenn Neo4j nicht verfügbar
-            print(f"Neo4j lookup failed, using logs: {neo4j_error}")
-            pass
-        
-        # Fallback: Parse aus Forensic Logs
-        log_file = Path("logs/forensic/forensic_trace.jsonl")
-        scenario_data = {}  # scenario_id -> {injects: [], logs: []}
-        
-        if log_file.exists():
-            with open(log_file, 'r') as f:
-                for line in f:
-                    if line.strip() and not line.startswith('#'):
-                        try:
-                            log_entry = json.loads(line)
-                            scenario_id = log_entry.get("scenario_id")
-                            if not scenario_id:
-                                continue
-                                
-                            if scenario_id not in scenario_data:
-                                scenario_data[scenario_id] = {
-                                    "injects": {},
-                                    "logs": [],
-                                    "last_timestamp": None
-                                }
-                            
-                            data = log_entry.get("data", {})
-                            inject_id = data.get("inject_id")
-                            timestamp = log_entry.get("timestamp", "")
-                            
-                            # Track latest timestamp
-                            if timestamp and (not scenario_data[scenario_id]["last_timestamp"] or timestamp > scenario_data[scenario_id]["last_timestamp"]):
-                                scenario_data[scenario_id]["last_timestamp"] = timestamp
-                            
-                            # Sammle Inject-Informationen aus Logs
-                            if inject_id:
-                                if inject_id not in scenario_data[scenario_id]["injects"]:
-                                    scenario_data[scenario_id]["injects"][inject_id] = {
-                                        "inject_id": inject_id,
-                                        "status": "verified" if data.get("decision") == "accept" else "rejected",
-                                        "iteration": log_entry.get("iteration", 0),
-                                        "refine_count": log_entry.get("refine_count", 0),
-                                        "validation": data.get("validation", {}),
-                                        "first_seen": timestamp,
-                                    }
-                                else:
-                                    # Update mit neueren Daten
-                                    if log_entry.get("refine_count", 0) > scenario_data[scenario_id]["injects"][inject_id]["refine_count"]:
-                                        scenario_data[scenario_id]["injects"][inject_id].update({
-                                            "status": "verified" if data.get("decision") == "accept" else "rejected",
-                                            "refine_count": log_entry.get("refine_count", 0),
-                                            "validation": data.get("validation", {}),
-                                        })
-                            
-                            # Sammle Logs
-                            scenario_data[scenario_id]["logs"].append(log_entry)
-                        except json.JSONDecodeError:
-                            continue
-        
-        if not scenario_data:
+        if not scenarios or len(scenarios) == 0:
             return {"scenario_id": None, "injects": []}
         
-        # Finde neuestes Szenario basierend auf Timestamp
-        latest_scenario_id = max(
-            scenario_data.keys(),
-            key=lambda sid: scenario_data[sid]["last_timestamp"] or ""
-        )
+        latest_scenario = scenarios[0]
+        scenario_id = latest_scenario.get("scenario_id")
         
-        # Konvertiere Injects zu API-Format
-        injects = []
-        for inject_id, inject_data in sorted(scenario_data[latest_scenario_id]["injects"].items(), 
-                                            key=lambda x: x[1]["iteration"]):
-            validation = inject_data.get("validation", {})
-            errors = validation.get("errors", [])
-            
-            # Erstelle Refinement-History wenn Refine-Count > 0
-            refinement_history = None
-            if inject_data.get("refine_count", 0) > 0 and errors:
-                refinement_history = [{
-                    "original": f"Inject {inject_id} (original)",
-                    "corrected": f"Inject {inject_id} (refined)",
-                    "errors": errors,
-                }]
-            
-            injects.append({
-                "inject_id": inject_id,
-                "time_offset": f"T+{inject_data['iteration']:02d}:00",  # Basierend auf Iteration
-                "content": f"Inject {inject_id} - Generated in iteration {inject_data['iteration']}",
-                "status": inject_data["status"],
-                "phase": "UNKNOWN",  # Könnte aus Logs extrahiert werden
-                "source": "System",
-                "target": "SOC",
-                "modality": "SIEM Alert",
-                "mitre_id": None,
-                "affected_assets": [],  # Könnte aus Logs extrahiert werden
-                "refinement_history": refinement_history,
+        # Lade vollständiges Szenario
+        scenario = client.get_scenario(scenario_id)
+        
+        if not scenario:
+            return {"scenario_id": None, "injects": []}
+        
+        # Konvertiere Injects zu Response-Format
+        injects_response = []
+        for inject_data in scenario.get("injects", []):
+            injects_response.append({
+                "inject_id": inject_data.get("id", ""),
+                "time_offset": inject_data.get("time_offset", "T+00:00"),
+                "content": inject_data.get("content", ""),
+                "status": "verified",
+                "phase": inject_data.get("phase", "normal_operation"),
+                "source": inject_data.get("source", ""),
+                "target": inject_data.get("target", ""),
+                "modality": inject_data.get("modality", "SIEM Alert"),
+                "mitre_id": inject_data.get("mitre_id", ""),
+                "affected_assets": inject_data.get("technical_metadata", {}).get("affected_assets", []) if isinstance(inject_data.get("technical_metadata"), dict) else [],
+                "dora_compliance_tag": inject_data.get("dora_compliance_tag"),
+                "compliance_tags": inject_data.get("compliance_tags", {}),
             })
         
         return {
-            "scenario_id": latest_scenario_id,
-            "injects": injects,
+            "scenario_id": scenario_id,
+            "injects": injects_response,
         }
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error fetching latest scenario: {error_trace}")
+        # Return empty result instead of raising error
+        return {"scenario_id": None, "injects": []}
+
+
+@app.get("/api/scenario/list")
+async def list_scenarios(
+    limit: int = 50,
+    user: Optional[str] = None,
+    scenario_type: Optional[str] = None
+):
+    """Listet alle gespeicherten Szenarien auf."""
+    try:
+        client = get_neo4j_client()
+        scenarios = client.list_scenarios(
+            limit=limit,
+            user=user,
+            scenario_type=scenario_type
+        )
+        
+        # Konvertiere zu Response-Format
+        scenarios_response = []
+        for scenario in scenarios:
+            start_time = scenario.get("start_time")
+            created_at = scenario.get("created_at")
+            
+            # Konvertiere datetime zu ISO-String sicher
+            start_time_str = None
+            if start_time:
+                if isinstance(start_time, datetime):
+                    start_time_str = start_time.isoformat()
+                elif hasattr(start_time, 'isoformat'):
+                    start_time_str = start_time.isoformat()
+                else:
+                    start_time_str = str(start_time)
+            
+            created_at_str = None
+            if created_at:
+                if isinstance(created_at, datetime):
+                    created_at_str = created_at.isoformat()
+                elif hasattr(created_at, 'isoformat'):
+                    created_at_str = created_at.isoformat()
+                else:
+                    created_at_str = str(created_at)
+            
+            scenarios_response.append({
+                "scenario_id": scenario.get("scenario_id"),
+                "scenario_type": scenario.get("scenario_type"),
+                "current_phase": scenario.get("current_phase"),
+                "start_time": start_time_str,
+                "created_at": created_at_str,
+                "user": scenario.get("user"),
+                "inject_count": scenario.get("inject_count", 0),
+            })
+        
+        return {"scenarios": scenarios_response}
+    except Exception as e:
+        print(f"Error listing scenarios: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/scenario/{scenario_id}")
+async def get_scenario(scenario_id: str):
+    """Lädt ein gespeichertes Szenario."""
+    try:
+        client = get_neo4j_client()
+        scenario = client.get_scenario(scenario_id)
+        
+        if not scenario:
+            raise HTTPException(status_code=404, detail=f"Scenario {scenario_id} not found")
+        
+        # Konvertiere Injects zu Response-Format
+        injects_response = []
+        for inject_data in scenario.get("injects", []):
+            # #region agent log
+            try:
+                import json
+                import time
+                with open('/Users/finnheintzann/Desktop/BA/.cursor/debug.log', 'a') as f:
+                    log_entry = {
+                        "location": "api_server.py:398",
+                        "message": "Transforming inject from Neo4j",
+                        "data": {
+                            "inject_id": inject_data.get("id", ""),
+                            "has_technical_metadata": isinstance(inject_data.get("technical_metadata"), dict),
+                            "technical_metadata_type": str(type(inject_data.get("technical_metadata"))),
+                            "affected_assets_from_metadata": inject_data.get("technical_metadata", {}).get("affected_assets", []) if isinstance(inject_data.get("technical_metadata"), dict) else None,
+                        },
+                        "timestamp": int(time.time() * 1000),
+                        "sessionId": "debug-session",
+                        "runId": "run1",
+                        "hypothesisId": "E"
+                    }
+                    f.write(json.dumps(log_entry) + '\n')
+            except:
+                pass
+            # #endregion
+            
+            affected_assets = []
+            if isinstance(inject_data.get("technical_metadata"), dict):
+                affected_assets = inject_data.get("technical_metadata", {}).get("affected_assets", [])
+            elif isinstance(inject_data.get("technical_metadata"), str):
+                # Fallback: Versuche JSON zu parsen wenn es ein String ist
+                try:
+                    tech_meta = json.loads(inject_data.get("technical_metadata", "{}"))
+                    affected_assets = tech_meta.get("affected_assets", [])
+                except:
+                    affected_assets = []
+            
+            injects_response.append({
+                "inject_id": inject_data.get("id", ""),
+                "time_offset": inject_data.get("time_offset", "T+00:00"),
+                "content": inject_data.get("content", ""),
+                "status": "verified",
+                "phase": inject_data.get("phase", "normal_operation"),
+                "source": inject_data.get("source", ""),
+                "target": inject_data.get("target", ""),
+                "modality": inject_data.get("modality", "SIEM Alert"),
+                "mitre_id": inject_data.get("mitre_id", ""),
+                "affected_assets": affected_assets if isinstance(affected_assets, list) else [],
+                "dora_compliance_tag": inject_data.get("dora_compliance_tag"),
+                "compliance_tags": inject_data.get("compliance_tags", {}),
+            })
+        
+        # Konvertiere start_time sicher
+        start_time = scenario.get("start_time")
+        start_time_str = None
+        if start_time:
+            if isinstance(start_time, datetime):
+                start_time_str = start_time.isoformat()
+            elif hasattr(start_time, 'isoformat'):
+                start_time_str = start_time.isoformat()
+            else:
+                start_time_str = str(start_time)
+        
+        return {
+            "scenario_id": scenario.get("scenario_id"),
+            "scenario_type": scenario.get("scenario_type"),
+            "current_phase": scenario.get("current_phase"),
+            "start_time": start_time_str,
+            "injects": injects_response,
+            "metadata": scenario.get("metadata", {}),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error fetching scenario: {error_trace}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/forensic/upload")
+async def upload_forensic_trace(file: UploadFile = File(...)):
+    """Lädt eine Forensic Trace Datei hoch."""
+    try:
+        # Speichere Datei temporär
+        import tempfile
+        import os
+        
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.jsonl') as tmp_file:
+            content = await file.read()
+            tmp_file.write(content)
+            tmp_path = tmp_file.name
+        
+        # Parse JSONL
+        logs = []
+        with open(tmp_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    try:
+                        log_entry = json.loads(line)
+                        logs.append({
+                            "timestamp": log_entry.get("timestamp", ""),
+                            "inject_id": log_entry.get("data", {}).get("inject_id", ""),
+                            "event_type": log_entry.get("event_type", "CRITIC"),
+                            "message": f"Validation: {log_entry.get('data', {}).get('decision', 'unknown')}",
+                            "details": {
+                                "validation": log_entry.get("data", {}).get("validation", {})
+                            }
+                        })
+                    except json.JSONDecodeError:
+                        continue
+        
+        # Lösche temporäre Datei
+        os.unlink(tmp_path)
+        
+        return {
+            "success": True,
+            "logs_count": len(logs),
+            "logs": logs
+        }
+    except Exception as e:
+        print(f"Error uploading forensic trace: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

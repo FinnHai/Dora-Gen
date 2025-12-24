@@ -12,6 +12,7 @@ from state_models import KnowledgeGraphEntity, GraphStateUpdate, CrisisPhase, Sc
 import os
 from dotenv import load_dotenv
 import json
+from utils.json_encoder import DateTimeEncoder
 
 load_dotenv()
 
@@ -692,16 +693,17 @@ class Neo4jClient:
                 start_time=start_time_str,
                 user=user or "system",
                 inject_count=len(scenario_state.injects),
-                metadata=json.dumps(scenario_state.metadata) if scenario_state.metadata else "{}"
+                metadata=json.dumps(scenario_state.metadata, cls=DateTimeEncoder) if scenario_state.metadata else "{}"
             )
             
             scenario_id = result.single()["scenario_id"]
             
             # FORCE SERIALIZATION: Convert Pydantic objects to dicts if needed
+            # WICHTIG: Verwende mode='json' um DateTime-Objekte korrekt zu serialisieren
             injects_payload = []
             for inj in scenario_state.injects:
                 if hasattr(inj, 'model_dump'):
-                    injects_payload.append(inj.model_dump())  # Pydantic v2
+                    injects_payload.append(inj.model_dump(mode='json'))  # Pydantic v2 mit JSON-Mode
                 elif hasattr(inj, 'dict'):
                     injects_payload.append(inj.dict())  # Pydantic v1
                 else:
